@@ -1,0 +1,1986 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>LazyMan's Tallysheet</title>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+  <style>
+    :root {
+      --primary: #4a6fa5;
+      --secondary: #166088;
+      --accent: #4fc3f7;
+      --background: #f5f7fa;
+      --text: #333;
+      --male-cell: #d3e3fd;
+      --female-cell: #f8d7da;
+      --total-cell: #e2f3e8;
+      --border: #ddd;
+      --success: #4CAF50;
+      --error: #F44336;
+      --sound-color: #9c27b0;
+    }
+
+    .dark-mode {
+      --background: #1a1a2e;
+      --text: #f1f1f1;
+      --male-cell: #2a3f5f;
+      --female-cell: #5f2a4a;
+      --total-cell: #1a3a1a;
+      --border: #444;
+      --success: #388E3C;
+      --error: #D32F2F;
+      --sound-color: #ba68c8;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--background);
+      color: var(--text);
+      margin: 0;
+      padding: 20px;
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    #app-container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      padding: 10px 15px;
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.3s, transform 0.2s;
+    }
+
+    button:hover {
+      background-color: var(--secondary);
+      transform: translateY(-2px);
+    }
+
+    button:active {
+      transform: scale(0.96);
+      opacity: 0.9;
+    }
+
+    #themeToggle, #vibrationToggle, #soundToggle {
+      background-color: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    #soundToggle {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 10px 15px; /* Ensure consistent padding with other buttons */
+}
+
+/* Add this to ensure all toggle buttons have consistent styling */
+#themeToggle, #vibrationToggle, #soundToggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 10px 15px;
+}
+
+    input {
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background-color: var(--background);
+      color: var(--text);
+    }
+
+    .table-container {
+      width: 100%;
+      overflow-x: auto;
+      margin-bottom: 20px;
+    }
+
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 15px;
+    }
+
+    .data-table th, .data-table td {
+      padding: 12px;
+      text-align: center;
+      border: 1px solid var(--border);
+    }
+
+    .data-table th {
+      background-color: rgba(0,0,0,0.05);
+      font-weight: bold;
+      position: sticky;
+      top: 0;
+    }
+
+    .male-cell {
+      background-color: var(--male-cell);
+    }
+
+    .female-cell {
+      background-color: var(--female-cell);
+    }
+
+    .total-row {
+      font-weight: bold;
+    }
+
+    .total-cell {
+      background-color: var(--total-cell);
+    }
+
+    .age-group-cell {
+      text-align: left;
+      padding-left: 15px;
+      cursor: pointer;
+    }
+
+    .age-group-cell:hover {
+      background-color: rgba(0,0,0,0.05);
+    }
+
+    .highlight {
+      animation: pulse 0.5s;
+    }
+
+    .edit-input {
+      width: 100%;
+      height: 100%;
+      border: 2px solid var(--primary);
+      border-radius: 4px;
+      text-align: center;
+      font-size: inherit;
+      font-family: inherit;
+      background-color: white;
+      color: var(--text);
+    }
+    
+    .editing {
+      position: relative;
+      z-index: 100;
+    }
+    
+    .edit-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: transparent;
+      z-index: 99;
+      display: none;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+
+    #tabContainer {
+      display: flex;
+      gap: 5px;
+      margin-bottom: 15px;
+      flex-wrap: wrap;
+    }
+
+    .tab {
+      padding: 8px 12px;
+      background-color: rgba(0,0,0,0.1);
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .tab.active {
+      background-color: var(--primary);
+      color: white;
+    }
+
+    #searchContainer {
+      margin-bottom: 15px;
+    }
+
+    #historyPopup {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: var(--background);
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+      z-index: 1000;
+      max-width: 90%;
+      width: 400px;
+      border: 1px solid var(--border);
+    }
+
+    #historyPopup h3 {
+      margin-top: 0;
+    }
+
+    #historyList {
+      max-height: 300px;
+      overflow-y: auto;
+      padding: 0;
+      list-style: none;
+    }
+
+    #historyList li {
+      padding: 8px;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+    }
+
+    #historyList li:hover {
+      background-color: rgba(0,0,0,0.1);
+    }
+
+    .popup-buttons {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    #lockScreen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 10000;
+    }
+
+    .lock-screen-content {
+      background-color: var(--background);
+      padding: 30px;
+      border-radius: 10px;
+      text-align: center;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      max-width: 90%;
+      width: 350px;
+    }
+
+    .shake {
+      animation: shake 0.5s;
+    }
+
+    .success-bg {
+      animation: successPulse 1s;
+    }
+
+    .error-bg {
+      animation: errorPulse 1s;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-5px); }
+      40%, 80% { transform: translateX(5px); }
+    }
+
+    @keyframes successPulse {
+      0% { background-color: var(--background); }
+      20% { background-color: var(--success); }
+      100% { background-color: var(--background); }
+    }
+
+    @keyframes errorPulse {
+      0% { background-color: var(--background); }
+      20% { background-color: var(--error); }
+      100% { background-color: var(--background); }
+    }
+
+    @media (max-width: 768px) {
+      .header-bar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      
+      .controls {
+        flex-direction: column;
+      }
+    }
+	
+	
+	
+	
+	#ageAggregationPopup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: var(--background);
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+  z-index: 1000;
+  max-width: 90%;
+  width: 500px;
+  max-height: 80vh;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+}
+
+.aggregation-results {
+  margin-bottom: 15px;
+}
+
+.aggregation-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 15px;
+}
+
+.aggregation-table th, 
+.aggregation-table td {
+  padding: 8px;
+  text-align: center;
+  border: 1px solid var(--border);
+}
+
+.aggregation-table th {
+  background-color: rgba(0,0,0,0.05);
+}
+
+.total-row {
+  margin: 15px 0;
+  padding: 10px;
+  background-color: rgba(0,0,0,0.05);
+  border-radius: 4px;
+}
+
+.subtotal-row {
+  font-weight: bold;
+  background-color: rgba(0,0,0,0.05);
+}
+
+.subtotal-row td {
+  border-top: 2px solid var(--border);
+  border-bottom: 2px solid var(--border);
+}
+
+.total-row td {
+  border-top: 2px solid var(--primary);
+}
+
+
+
+
+.tab-name-edit {
+  outline: none;
+  border-bottom: 2px solid var(--primary) !important;
+  text-align: center;
+}
+
+.edit-tab-btn {
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.tab:hover .edit-tab-btn {
+  opacity: 1;
+}
+
+.grid-selection-popup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: var(--background);
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+  z-index: 1000;
+  max-width: 90%;
+  width: 400px;
+  border: 1px solid var(--border);
+}
+
+.grid-selection-list {
+  max-height: 300px;
+  overflow-y: auto;
+  margin: 15px 0;
+}
+
+.grid-selection-item {
+  display: flex;
+  align-items: center;
+  padding: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.grid-selection-item input {
+  margin-right: 10px;
+}
+
+
+
+.grid-selection-section {
+  margin-bottom: 20px;
+  padding: 15px;
+  background-color: rgba(0,0,0,0.05);
+  border-radius: 4px;
+}
+
+.grid-selection-list {
+  max-height: 150px;
+  overflow-y: auto;
+  margin: 10px 0;
+}
+
+.grid-selection-item {
+  display: flex;
+  align-items: center;
+  padding: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.grid-selection-item input {
+  margin-right: 10px;
+}
+
+/* Add this to your existing CSS */
+.aggregation-table .total-row {
+  font-weight: bold;
+  background-color: rgba(0,0,0,0.05);
+}
+
+.aggregation-table .total-row td {
+  border-top: 2px solid var(--border);
+}
+
+
+	
+  </style>
+</head>
+<body>
+  <div id="lockScreen">
+    <div class="lock-screen-content">
+      <h2>Enter Password</h2>
+      <input type="password" id="passwordInput" placeholder="Password">
+      <button id="unlockButton">Unlock</button>
+      <p id="errorMessage" style="color: red; display: none;">Incorrect password!</p>
+    </div>
+  </div>
+
+
+<div id="gridSelectionPopup" class="grid-selection-popup" style="display: none;">
+  <h3>Select Grids to Sum</h3>
+  <div class="grid-selection-list" id="gridSelectionList"></div>
+  <div class="popup-buttons">
+    <button id="confirmGridSelection">Create Sum</button>
+    <button id="cancelGridSelection">Cancel</button>
+  </div>
+</div>
+
+
+
+
+
+
+
+  <div id="app-container">
+    <div class="header-bar">
+      <h1>LazyMan's Tallysheet</h1>
+      <div class="controls">
+        <input type="text" id="fileTitle" placeholder="File name">
+      </div>
+    </div>
+	
+	<div id="ageAggregationPopup" style="display: none;">
+  <h3>Age Group Aggregation</h3>
+  
+  <div class="grid-selection-section">
+    <h4>Select Grids to Include:</h4>
+    <div class="grid-selection-list" id="ageAggregationGridList"></div>
+  </div>
+  
+  <div class="aggregation-results">
+  <h4>Minors</h4>
+  <table class="aggregation-table">
+    <thead>
+      <tr><th>Age Group</th><th>Male</th><th>Female</th></tr>
+    </thead>
+    <tbody>
+      <!-- Rows will be added here including totals row -->
+    </tbody>
+  </table>
+  
+  <h4>Adults</h4>
+  <table class="aggregation-table">
+    <thead>
+      <tr><th>Age Group</th><th>Male</th><th>Female</th></tr>
+    </thead>
+    <tbody>
+      <!-- Rows will be added here including totals row -->
+    </tbody>
+  </table>
+  
+  <div class="total-row">
+    <strong>Combined Total Minors:</strong> <span id="totalMinors">0</span><br>
+    <strong>Combined Total Adults:</strong> <span id="totalAdults">0</span>
+  </div>
+</div>
+  
+  <div class="popup-buttons">
+    <button id="createAggregatedGrid">Create Aggregated Grid</button>
+    <button id="closeAgeAggregation">Close</button>
+  </div>
+</div>
+	
+	
+	
+
+    <div id="searchContainer">
+      <input type="text" id="searchInput" placeholder="Search age groups...">
+    </div>
+
+    <div class="controls">
+	  <button id="vibrationToggle">📳 Vibrations ON</button>
+      <button id="soundToggle">🔊 Sounds ON</button>
+      <button id="themeToggle">🌙 Dark Mode</button>
+	  <button id="exportExcelBtn">📊 Export Excel</button>
+      <button id="exportCSVBtn">📝 Export CSV</button>
+      <button id="exportJSONBtn">📤 Export JSON</button>
+      <button id="importJSONBtn">📥 Import JSON</button>
+     
+	
+      <button id="sumGridsButton">🧮 Aggregate Grids</button>
+      <button id="aggregateAgeButton">👶 Aggregate by Peads/Adults</button>
+      <button id="resetButton">🔄 Reset</button>
+      <button id="undoHistoryButton">⏪ History</button>
+      
+	  <button id="addGridButton">➕ Add Grid</button>
+	  
+    </div>
+
+    <div id="tabContainer"></div>
+
+    <div id="gridContainer"></div>
+  </div>
+
+  <div id="historyPopup" style="display: none;">
+    <h3>Undo History</h3>
+    <ul id="historyList"></ul>
+    <div class="popup-buttons">
+      <button id="closePopup">Close</button>
+    </div>
+  </div>
+
+  <div class="edit-overlay"></div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      // Configuration
+      const CORRECT_PASSWORD = "IamMusa";
+      const AGE_GROUPS = [
+        { label: "<1", range: "<1" },
+        { label: "1-4", range: "1-4" },
+        { label: "5-9", range: "5-9" },
+        { label: "10-14", range: "10-14" },
+        { label: "15-19", range: "15-19" },
+        { label: "20-24", range: "20-24" },
+        { label: "25-29", range: "25-29" },
+        { label: "30-34", range: "30-34" },
+        { label: "35-39", range: "35-39" },
+        { label: "40-44", range: "40-44" },
+        { label: "45-49", range: "45-49" },
+        { label: "50-54", range: "50-54" },
+        { label: "55-59", range: "55-59" },
+        { label: "60-64", range: "60-64" },
+        { label: "65+", range: "65+" }
+      ];
+      const UNDO_LIMIT = 20;
+
+      // State
+      let undoStack = [];
+      let gridCount = 1;
+      let gridNames = ["General"];
+      let lastEngagedCell = null;
+      let pressTimer = null;
+      let isEditing = false;
+
+      // ======================
+      // SOUND CONTROLLER
+      // ======================
+      const Sound = {
+        enabled: true,
+        audioContext: null,
+        sounds: {
+          increment: { freq: 800, duration: 0.05, type: "sine" },
+          button: { freq: 600, duration: 0.03, type: "square" },
+          undo: { freq: [300, 500, 300], duration: 0.08, type: "sine" },
+          error: { freq: 200, duration: 0.3, type: "sawtooth" },
+          success: { freq: 1000, duration: 0.1, type: "sine" },
+          tabSwitch: { freq: 400, duration: 0.05, type: "sine" },
+          export: { freq: [500, 700, 500], duration: 0.1, type: "square" },
+          editStart: { freq: [600, 400], duration: 0.05, type: "sine" }
+        },
+        
+        init() {
+          try {
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          } catch (e) {
+            console.warn("Web Audio API not supported", e);
+            this.enabled = false;
+          }
+        },
+        
+        play(type) {
+          if (!this.enabled || !this.audioContext) return;
+          
+          const sound = this.sounds[type] || this.sounds.button;
+          const osc = this.audioContext.createOscillator();
+          const gain = this.audioContext.createGain();
+          
+          osc.type = sound.type;
+          
+          if (Array.isArray(sound.freq)) {
+            // Play sequence of frequencies
+            sound.freq.forEach((freq, i) => {
+              osc.frequency.setValueAtTime(
+                freq, 
+                this.audioContext.currentTime + (i * sound.duration)
+              );
+            });
+          } else {
+            osc.frequency.value = sound.freq;
+          }
+          
+          gain.gain.setValueAtTime(0.1, this.audioContext.currentTime);
+          gain.gain.exponentialRampToValueAtTime(
+            0.001, 
+            this.audioContext.currentTime + (Array.isArray(sound.freq) ? 
+              sound.freq.length * sound.duration : sound.duration)
+          );
+          
+          osc.connect(gain);
+          gain.connect(this.audioContext.destination);
+          osc.start();
+          osc.stop(this.audioContext.currentTime + (
+            Array.isArray(sound.freq) ? 
+            sound.freq.length * sound.duration * 1.1 : 
+            sound.duration * 1.5
+          ));
+        },
+        
+        toggle(enable) {
+          this.enabled = enable;
+          localStorage.setItem("soundEnabled", enable);
+          updateSoundButton();
+          if (enable && !this.audioContext) this.init();
+        }
+      };
+
+      function updateSoundButton() {
+        const btn = document.getElementById("soundToggle");
+        if (Sound.enabled) {
+          btn.innerHTML = "🔊 Sounds ON";
+          btn.style.color = "var(--sound-color)";
+        } else {
+          btn.innerHTML = "🔇 Sounds OFF";
+          btn.style.color = "var(--error)";
+        }
+      }
+
+      // ======================
+      // VIBRATION CONTROLLER
+      // ======================
+      const Vibration = {
+        enabled: true,
+        patterns: {
+          increment: 30,
+          button: 15,
+          undo: [15, 20, 15],
+          editStart: [20, 10, 10],
+          error: [100, 30, 100],
+          success: 50,
+          tabSwitch: 10,
+          export: [20, 10, 20]
+        },
+        
+        trigger(type) {
+          if (!this.enabled || !("vibrate" in navigator)) return;
+          const pattern = this.patterns[type] || 50;
+          try {
+            navigator.vibrate(pattern);
+          } catch (e) {
+            console.warn("Vibration failed:", e);
+          }
+        },
+        
+        toggle(enable) {
+          this.enabled = enable;
+          localStorage.setItem("vibrationEnabled", enable);
+          updateVibrationButton();
+          this.trigger("button");
+        }
+      };
+
+      function updateVibrationButton() {
+        const btn = document.getElementById("vibrationToggle");
+        if (Vibration.enabled) {
+          btn.innerHTML = "📳 Vibrations ON";
+          btn.style.color = "var(--success)";
+        } else {
+          btn.innerHTML = "🔇 Vibrations OFF";
+          btn.style.color = "var(--error)";
+        }
+      }
+
+      // ======================
+      // FEEDBACK WRAPPER
+      // ======================
+      const Feedback = {
+        trigger(type) {
+          Vibration.trigger(type);
+          Sound.play(type);
+        },
+        
+        init() {
+          // Load preferences
+          Vibration.toggle(localStorage.getItem("vibrationEnabled") !== "false");
+          Sound.toggle(localStorage.getItem("soundEnabled") !== "false");
+          
+          // Add event listeners for toggles
+          document.getElementById("vibrationToggle").addEventListener("click", () => {
+            Vibration.toggle(!Vibration.enabled);
+          });
+          
+          document.getElementById("soundToggle").addEventListener("click", () => {
+            Sound.toggle(!Sound.enabled);
+          });
+          
+          // Add feedback to all buttons
+          document.querySelectorAll('button').forEach(btn => {
+            if (!btn.id.includes("Toggle")) {
+              btn.addEventListener('click', () => Feedback.trigger("button"));
+            }
+          });
+        }
+      };
+
+      // DOM Elements
+      const lockScreen = document.getElementById("lockScreen");
+      const passwordInput = document.getElementById("passwordInput");
+      const unlockButton = document.getElementById("unlockButton");
+      const errorMessage = document.getElementById("errorMessage");
+      const tabContainer = document.getElementById("tabContainer");
+      const gridContainer = document.getElementById("gridContainer");
+      const historyPopup = document.getElementById("historyPopup");
+      const historyList = document.getElementById("historyList");
+      const closePopupButton = document.getElementById("closePopup");
+      const fileTitleInput = document.getElementById("fileTitle");
+      const resetButton = document.getElementById("resetButton");
+      const addGridButton = document.getElementById("addGridButton");
+      const exportExcelBtn = document.getElementById("exportExcelBtn");
+      const exportCSVBtn = document.getElementById("exportCSVBtn");
+      const exportJSONBtn = document.getElementById("exportJSONBtn");
+      const importJSONBtn = document.getElementById("importJSONBtn");
+      const searchInput = document.getElementById("searchInput");
+      const themeToggle = document.getElementById("themeToggle");
+      const undoHistoryButton = document.getElementById("undoHistoryButton");
+      const vibrationToggle = document.getElementById("vibrationToggle");
+      const soundToggle = document.getElementById("soundToggle");
+      const editOverlay = document.querySelector('.edit-overlay');
+
+      // Initialize
+      createTab(1, true, "General");
+      loadGridData();
+      checkDarkMode();
+      Feedback.init();
+
+      // Initialize Sound (will only activate after user interaction)
+      document.addEventListener('click', () => {
+        if (!Sound.audioContext && Sound.enabled) {
+          Sound.init();
+        }
+      }, { once: true });
+
+      // Event Listeners
+      unlockButton.addEventListener("click", unlockApp);
+      passwordInput.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") unlockApp();
+      });
+      closePopupButton.addEventListener("click", () => historyPopup.style.display = "none");
+      resetButton.addEventListener("click", resetAllGrids);
+      addGridButton.addEventListener("click", addNewGrid);
+      exportExcelBtn.addEventListener("click", exportToExcel);
+      exportCSVBtn.addEventListener("click", exportToCSV);
+      exportJSONBtn.addEventListener("click", exportToJSON);
+      importJSONBtn.addEventListener("click", importFromJSON);
+      searchInput.addEventListener("input", filterAgeGroups);
+      themeToggle.addEventListener("click", toggleDarkMode);
+      undoHistoryButton.addEventListener("click", showHistoryPopup);
+	  document.getElementById("sumGridsButton").addEventListener("click", sumMarkedGrids);
+	  document.getElementById("aggregateAgeButton").addEventListener("click", showAgeAggregationPopup);
+
+      window.addEventListener("beforeunload", confirmExit);
+
+      // Functions
+      function unlockApp() {
+        if (passwordInput.value === CORRECT_PASSWORD) {
+          document.body.classList.add("success-bg");
+          Feedback.trigger("success");
+          setTimeout(() => document.body.classList.remove("success-bg"), 1000);
+          lockScreen.style.display = "none";
+          localStorage.setItem("unlocked", "true");
+        } else {
+          document.body.classList.add("error-bg");
+          Feedback.trigger("error");
+          setTimeout(() => document.body.classList.remove("error-bg"), 1000);
+          errorMessage.style.display = "block";
+          passwordInput.classList.add("shake");
+          setTimeout(() => {
+            passwordInput.classList.remove("shake");
+          }, 500);
+        }
+      }
+
+
+
+
+function createTab(gridIndex, isActive = false, name = `Grid ${gridIndex}`) {
+  const tab = document.createElement("div");
+  tab.className = `tab ${isActive ? "active" : ""}`;
+  tab.dataset.grid = `grid${gridIndex}`;
+  
+  // Create editable span for the tab name
+  const nameSpan = document.createElement("span");
+  nameSpan.textContent = name;
+  nameSpan.className = "tab-name";
+  tab.appendChild(nameSpan);
+  
+  // Add edit button
+  const editBtn = document.createElement("span");
+  editBtn.innerHTML = " ✏️";
+  editBtn.className = "edit-tab-btn";
+  editBtn.style.cursor = "pointer";
+  editBtn.style.marginLeft = "5px";
+  editBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    editTabName(tab);
+  });
+  tab.appendChild(editBtn);
+  
+  tab.addEventListener("click", () => setActiveTab(tab.dataset.grid));
+  tabContainer.appendChild(tab);
+
+  // Rest of the createTab function remains the same...
+  const tableContainer = document.createElement("div");
+  tableContainer.className = "table-container";
+  tableContainer.id = `grid${gridIndex}`;
+  tableContainer.style.display = isActive ? "block" : "none";
+  gridContainer.appendChild(tableContainer);
+
+  const table = document.createElement("table");
+  table.className = "data-table";
+  tableContainer.appendChild(table);
+
+  const thead = document.createElement("thead");
+  table.appendChild(thead);
+  
+  const headerRow = document.createElement("tr");
+  thead.appendChild(headerRow);
+  
+  ["Age Group", "Male", "Female"].forEach(text => {
+    const th = document.createElement("th");
+    th.textContent = text;
+    headerRow.appendChild(th);
+  });
+
+  const tbody = document.createElement("tbody");
+  table.appendChild(tbody);
+
+  AGE_GROUPS.forEach(ageGroup => {
+    createAgeGroupRow(tbody, ageGroup);
+  });
+
+  const totalRow = document.createElement("tr");
+  totalRow.className = "total-row";
+  tbody.appendChild(totalRow);
+  
+  const totalLabel = document.createElement("td");
+  totalLabel.textContent = "Total";
+  totalLabel.className = "age-group-cell";
+  totalRow.appendChild(totalLabel);
+  
+  createCell("male", "Total", totalRow, true);
+  createCell("female", "Total", totalRow, true);
+}
+
+
+
+function editTabName(tab) {
+  const nameSpan = tab.querySelector('.tab-name');
+  const currentName = nameSpan.textContent;
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.value = currentName;
+  input.className = 'tab-name-edit';
+  
+  // Style the input to match the tab
+  input.style.border = 'none';
+  input.style.background = 'transparent';
+  input.style.color = 'inherit';
+  input.style.font = 'inherit';
+  input.style.width = (currentName.length * 8) + 'px';
+  input.style.minWidth = '50px';
+  
+  // Replace span with input
+  nameSpan.replaceWith(input);
+  input.focus();
+  
+  function finishEdit() {
+    const newName = input.value.trim();
+    if (newName && newName !== currentName) {
+      // Update the tab name
+      nameSpan.textContent = newName;
+      
+      // Update the gridNames array
+      const gridIndex = parseInt(tab.dataset.grid.replace('grid', '')) - 1;
+      if (gridIndex >= 0 && gridIndex < gridNames.length) {
+        gridNames[gridIndex] = newName;
+      }
+      
+      // Auto-save
+      autoSaveGridData();
+    }
+    
+    // Replace input with span
+    input.replaceWith(nameSpan);
+  }
+  
+  input.addEventListener('blur', finishEdit);
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') finishEdit();
+    else if (e.key === 'Escape') input.replaceWith(nameSpan);
+  });
+}	  
+	  
+	  
+	  
+	  
+	  
+	  
+
+      function createAgeGroupRow(tbody, ageGroup) {
+        const row = document.createElement("tr");
+        tbody.appendChild(row);
+        
+        const ageGroupCell = document.createElement("td");
+        ageGroupCell.className = "age-group-cell";
+        ageGroupCell.textContent = ageGroup.label;
+        ageGroupCell.dataset.ageGroup = ageGroup.range;
+        ageGroupCell.addEventListener("click", () => {
+          const tableContainer = tbody.closest('.table-container');
+          undoLastChangeForAgeGroup(ageGroup.range, tableContainer);
+        });
+        row.appendChild(ageGroupCell);
+
+        createCell("male", ageGroup.range, row);
+        createCell("female", ageGroup.range, row);
+      }
+
+      function createCell(type, ageGroup, row, isTotal = false) {
+        const cell = document.createElement("td");
+        cell.className = `${type}-cell ${isTotal ? "total-cell" : ""}`;
+        cell.textContent = "0";
+        cell.dataset.type = type;
+        cell.dataset.ageGroup = ageGroup;
+
+        // Touch events
+        let touchStartTime;
+        let touchMoved = false;
+
+        cell.addEventListener('touchstart', (e) => {
+          if (isEditing) return;
+          touchStartTime = Date.now();
+          touchMoved = false;
+          pressTimer = setTimeout(() => {
+            startEditing(cell);
+          }, 1000);
+        }, { passive: false });
+
+        cell.addEventListener('touchmove', () => {
+          touchMoved = true;
+          if (pressTimer) {
+            clearTimeout(pressTimer);
+            pressTimer = null;
+          }
+        });
+
+        cell.addEventListener('touchend', (e) => {
+          if (pressTimer) {
+            clearTimeout(pressTimer);
+            pressTimer = null;
+          }
+          
+          if (!isEditing && !touchMoved && (Date.now() - touchStartTime < 300)) {
+            e.preventDefault();
+            incrementCell(cell);
+          }
+        });
+
+        cell.addEventListener('touchcancel', () => {
+          if (pressTimer) {
+            clearTimeout(pressTimer);
+            pressTimer = null;
+          }
+        });
+
+        // Mouse events
+        cell.addEventListener('mousedown', () => {
+          if (isEditing) return;
+          pressTimer = setTimeout(() => {
+            startEditing(cell);
+          }, 1000);
+        });
+
+        cell.addEventListener('mouseup', () => {
+          if (pressTimer) {
+            clearTimeout(pressTimer);
+            pressTimer = null;
+          }
+        });
+
+        cell.addEventListener('mouseleave', () => {
+          if (pressTimer) {
+            clearTimeout(pressTimer);
+            pressTimer = null;
+          }
+        });
+
+        // Click handler
+        cell.addEventListener('click', (e) => {
+          if (!isEditing && !pressTimer) {
+            incrementCell(cell);
+          }
+        });
+
+        row.appendChild(cell);
+        return cell;
+      }
+      
+      function startEditing(cell) {
+        if (isEditing) return;
+        isEditing = true;
+        Feedback.trigger("editStart");
+        
+        const value = cell.textContent;
+        const input = document.createElement('input');
+        input.type = 'number';
+        input.className = 'edit-input';
+        input.value = value;
+        input.min = '0';
+        
+        cell.classList.add('editing');
+        cell.innerHTML = '';
+        cell.appendChild(input);
+        input.focus();
+        editOverlay.style.display = 'block';
+        
+        function finishEdit() {
+          const newValue = parseInt(input.value) || 0;
+          const previousValue = parseInt(value) || 0;
+          
+          if (newValue !== previousValue) {
+            undoStack.push({
+              cell,
+              previousValue,
+              action: `Edited ${cell.dataset.ageGroup} ${cell.dataset.type} from ${previousValue} to ${newValue}`,
+              gridId: cell.closest('.table-container').id
+            });
+            
+            if (undoStack.length > UNDO_LIMIT) undoStack.shift();
+            cell.textContent = newValue;
+            updateTotalCells();
+            autoSaveGridData();
+          } else {
+            cell.textContent = value;
+          }
+          cleanupEdit();
+        }
+        
+        function cleanupEdit() {
+          editOverlay.style.display = 'none';
+          cell.classList.remove('editing');
+          isEditing = false;
+          pressTimer = null;
+        }
+        
+        input.addEventListener('blur', finishEdit);
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') finishEdit();
+          else if (e.key === 'Escape') {
+            cell.textContent = value;
+            cleanupEdit();
+          }
+        });
+        editOverlay.addEventListener('click', finishEdit);
+      }
+
+      function incrementCell(cell) {
+        Feedback.trigger("increment");
+        const previousValue = parseInt(cell.textContent) || 0;
+        const newValue = previousValue + 1;
+        
+        undoStack.push({
+          cell,
+          previousValue,
+          action: `${cell.dataset.ageGroup} ${cell.dataset.type}: ${previousValue} → ${newValue}`,
+          gridId: cell.closest('.table-container').id
+        });
+
+        if (undoStack.length > UNDO_LIMIT) undoStack.shift();
+        cell.textContent = newValue;
+        updateTotalCells();
+        highlightCell(cell);
+        autoSaveGridData();
+      }
+
+      function undoLastChangeForAgeGroup(ageGroup, tableContainer) {
+        const gridId = tableContainer.id;
+        const undoIndex = undoStack.findLastIndex(
+          action => action.cell.dataset.ageGroup === ageGroup && 
+                   action.gridId === gridId
+        );
+
+        if (undoIndex !== -1) undoFromHistory(undoIndex);
+        else showToast(`No actions to undo for ${ageGroup}`);
+      }
+
+      function undoFromHistory(index) {
+        if (index >= 0 && index < undoStack.length) {
+          Feedback.trigger("undo");
+          const action = undoStack[index];
+          action.cell.textContent = action.previousValue;
+          undoStack.splice(index, 1);
+          updateTotalCells();
+          autoSaveGridData();
+          highlightCell(action.cell);
+          return true;
+        }
+        return false;
+      }
+
+      function showHistoryPopup() {
+        Feedback.trigger("button");
+        historyPopup.style.display = "block";
+        historyList.innerHTML = "";
+        
+        if (undoStack.length === 0) {
+          const li = document.createElement("li");
+          li.textContent = "No history available";
+          historyList.appendChild(li);
+          return;
+        }
+
+        undoStack.slice().reverse().forEach((action, index) => {
+          const li = document.createElement("li");
+          li.textContent = action.action;
+          li.addEventListener("click", () => {
+            const stackIndex = undoStack.length - 1 - index;
+            if (undoFromHistory(stackIndex)) {
+              historyPopup.style.display = "none";
+            }
+          });
+          historyList.appendChild(li);
+        });
+      }
+
+      function updateTotalCells() {
+        document.querySelectorAll(".data-table").forEach(table => {
+          let maleTotal = 0, femaleTotal = 0;
+          const maleCells = table.querySelectorAll('td.male-cell:not(.total-cell)');
+          const femaleCells = table.querySelectorAll('td.female-cell:not(.total-cell)');
+
+          maleCells.forEach(cell => maleTotal += parseInt(cell.textContent) || 0);
+          femaleCells.forEach(cell => femaleTotal += parseInt(cell.textContent) || 0);
+
+          const totalMaleCell = table.querySelector('.total-cell.male-cell');
+          const totalFemaleCell = table.querySelector('.total-cell.female-cell');
+          if (totalMaleCell) totalMaleCell.textContent = maleTotal;
+          if (totalFemaleCell) totalFemaleCell.textContent = femaleTotal;
+        });
+      }
+
+      function highlightCell(cell) {
+        if (lastEngagedCell) lastEngagedCell.classList.remove("highlight");
+        cell.classList.add("highlight");
+        lastEngagedCell = cell;
+        setTimeout(() => cell.classList.remove("highlight"), 500);
+      }
+
+      function setActiveTab(gridId) {
+        Feedback.trigger("tabSwitch");
+        document.querySelectorAll(".table-container").forEach(container => {
+          container.style.display = container.id === gridId ? "block" : "none";
+        });
+        document.querySelectorAll(".tab").forEach(tab => {
+          tab.classList.toggle("active", tab.dataset.grid === gridId);
+        });
+      }
+
+      function addNewGrid() {
+        const newGridName = prompt("Enter a name for the new grid:");
+        if (newGridName && !gridNames.includes(newGridName)) {
+          gridCount += 1;
+          gridNames.push(newGridName);
+          createTab(gridCount, true, newGridName);
+        } else if (newGridName) {
+          showToast("Grid name already exists!");
+        }
+      }
+
+      function resetAllGrids(silent = false) {
+        if (!silent && !confirm("Are you sure you want to reset ALL grids? This cannot be undone.")) {
+          return;
+        }
+        
+        document.querySelectorAll(".data-table td[data-type]").forEach(cell => {
+          cell.textContent = "0";
+        });
+        
+        // Reset grid names and tabs (except first one)
+        gridNames = ["General"];
+        document.querySelector(`.tab[data-grid="grid1"]`).textContent = "General";
+        
+        // Remove additional grids
+        const tabs = document.querySelectorAll(".tab:not([data-grid='grid1'])");
+        const grids = document.querySelectorAll(".table-container:not(#grid1)");
+        
+        tabs.forEach(tab => tab.remove());
+        grids.forEach(grid => grid.remove());
+        
+        gridCount = 1;
+        undoStack = [];
+        updateTotalCells();
+        autoSaveGridData();
+        
+        if (!silent) {
+          showToast("All grids reset!");
+        }
+      }
+
+function exportToExcel() {
+  Feedback.trigger("export");
+  const data = [];
+  document.querySelectorAll(".data-table").forEach(table => {
+    const gridName = document.querySelector(`.tab[data-grid="${table.closest('.table-container').id}"]`).textContent;
+    const gridData = [];
+
+    gridData.push([gridName]);
+    gridData.push(["Age Group", "Male", "Female"]);
+
+    const rows = table.querySelectorAll('tbody tr:not(.total-row)');
+    rows.forEach(row => {
+      const ageGroup = row.querySelector('.age-group-cell').textContent;
+      const maleCell = row.querySelector('.male-cell');
+      const femaleCell = row.querySelector('.female-cell');
+      gridData.push([ageGroup, parseInt(maleCell.textContent) || 0, parseInt(femaleCell.textContent) || 0]);
+    });
+
+    const totalRow = table.querySelector('.total-row');
+    if (totalRow) {
+      const totalMale = totalRow.querySelector('.male-cell');
+      const totalFemale = totalRow.querySelector('.female-cell');
+      gridData.push(["Total", parseInt(totalMale.textContent) || 0, parseInt(totalFemale.textContent) || 0]);
+    }
+
+    data.push({
+      name: gridName,
+      data: gridData
+    });
+  });
+
+  const workbook = XLSX.utils.book_new();
+  data.forEach(gridData => {
+    // Clean the sheet name to remove invalid characters
+    const sheetName = gridData.name.replace(/[\\/*[\]:?]/g, '').substring(0, 31);
+    const worksheet = XLSX.utils.aoa_to_sheet(gridData.data);
+    XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+  });
+
+  const fileName = fileTitleInput.value || "Population Data";
+  XLSX.writeFile(workbook, `${fileName}.xlsx`);
+  showToast("Exported to Excel!");
+}
+
+      function exportToCSV() {
+        Feedback.trigger("export");
+        let csvContent = "Age Group,Male,Female\n";
+        document.querySelectorAll('.data-table').forEach(table => {
+          const gridName = document.querySelector(`.tab[data-grid="${table.closest('.table-container').id}"]`).textContent;
+          csvContent += `\n${gridName}\n`;
+          const rows = table.querySelectorAll('tbody tr:not(.total-row)');
+          rows.forEach(row => {
+            const ageGroup = row.querySelector('.age-group-cell').textContent;
+            const maleCell = row.querySelector('.male-cell');
+            const femaleCell = row.querySelector('.female-cell');
+            csvContent += `${ageGroup},${maleCell.textContent},${femaleCell.textContent}\n`;
+          });
+        });
+
+        const blob = new Blob([csvContent], { type: "text/csv" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${fileTitleInput.value || "data"}.csv`;
+        a.click();
+        showToast("Exported to CSV!");
+      }
+
+      function exportToJSON() {
+        Feedback.trigger("export");
+        
+        const exportData = {
+          version: "1.0",
+          exportedAt: new Date().toISOString(),
+          fileName: fileTitleInput.value || "Untitled Tallysheet",
+          grids: [],
+          settings: {
+            darkMode: document.body.classList.contains("dark-mode"),
+            soundEnabled: Sound.enabled,
+            vibrationEnabled: Vibration.enabled,
+            fileTitle: fileTitleInput.value || ""
+          }
+        };
+
+        // Collect all grid data
+        document.querySelectorAll(".table-container").forEach(container => {
+          const gridId = container.id;
+          const gridName = document.querySelector(`.tab[data-grid="${gridId}"]`).textContent;
+          const gridData = {
+            id: gridId,
+            name: gridName,
+            cells: []
+          };
+
+          // Collect all cell data for this grid
+          container.querySelectorAll("td[data-type]").forEach(cell => {
+            gridData.cells.push({
+              type: cell.dataset.type,
+              ageGroup: cell.dataset.ageGroup,
+              value: cell.textContent
+            });
+          });
+
+          exportData.grids.push(gridData);
+        });
+
+        // Create and trigger download
+        const dataStr = JSON.stringify(exportData, null, 2);
+        const blob = new Blob([dataStr], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${exportData.fileName.replace(/[^a-z0-9]/gi, '_')}_${new Date().toISOString().slice(0,10)}.json`;
+        a.click();
+        
+        showToast("Data exported to JSON file!");
+      }
+
+function importFromJSON() {
+  Feedback.trigger("button");
+  
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json,application/json';
+  
+  input.onchange = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = event => {
+      try {
+        const data = JSON.parse(event.target.result);
+        
+        // Validate the imported file
+        if (!data.grids || !Array.isArray(data.grids)) {
+          throw new Error("Invalid file format: missing grids data");
+        }
+        
+        if (!confirm(`This will import ${data.grids.length} grid(s). Current data will be replaced. Continue?`)) {
+          return;
+        }
+        
+        // Clear existing data
+        resetAllGrids(true); // Silent reset without confirmation
+        
+        // Process imported grids
+        data.grids.forEach((gridData, index) => {
+          if (index === 0) {
+            // Update first grid
+            updateGridData(`grid1`, gridData.cells);
+            gridNames[0] = gridData.name || "General";
+            document.querySelector(`.tab[data-grid="grid1"]`).textContent = gridNames[0];
+          } else {
+            // Create new grids for additional data
+            gridCount++;
+            const gridName = gridData.name || `Grid ${gridCount}`;
+            gridNames.push(gridName);
+            createTab(gridCount, false, gridName);
+            updateGridData(`grid${gridCount}`, gridData.cells);
+          }
+          
+          // Update the grid name in the tab
+          const tab = document.querySelector(`.tab[data-grid="grid${index === 0 ? 1 : gridCount}"]`);
+          if (tab) {
+            tab.textContent = gridData.name || (index === 0 ? "General" : `Grid ${gridCount}`);
+          }
+        });
+        
+        // Restore settings
+        if (data.settings) {
+          if (data.settings.darkMode !== undefined) {
+            document.body.classList.toggle("dark-mode", data.settings.darkMode);
+            themeToggle.textContent = data.settings.darkMode ? "☀️ Light Mode" : "🌙 Dark Mode";
+            localStorage.setItem("darkMode", data.settings.darkMode);
+          }
+          
+          if (data.settings.soundEnabled !== undefined) {
+            Sound.toggle(data.settings.soundEnabled);
+          }
+          
+          if (data.settings.vibrationEnabled !== undefined) {
+            Vibration.toggle(data.settings.vibrationEnabled);
+          }
+          
+          if (data.settings.fileTitle) {
+            fileTitleInput.value = data.settings.fileTitle;
+          }
+        }
+        
+        updateTotalCells();
+        autoSaveGridData();
+        showToast(`Successfully imported ${data.grids.length} grid(s) from ${file.name}`);
+        
+      } catch (error) {
+        console.error("Error importing JSON:", error);
+        showToast("Error importing file: " + error.message, true);
+      }
+    };
+    reader.onerror = () => {
+      showToast("Error reading file", true);
+    };
+    reader.readAsText(file);
+  };
+  
+  input.click();
+}
+
+function updateGridData(gridId, cells) {
+  const container = document.getElementById(gridId);
+  if (!container) return;
+  
+  // Find all cells in the container
+  const allCells = container.querySelectorAll('td[data-type]');
+  
+  cells.forEach(cellData => {
+    // Find the matching cell
+    const matchingCells = Array.from(allCells).filter(cell => 
+      cell.dataset.ageGroup === cellData.ageGroup && 
+      cell.dataset.type === cellData.type
+    );
+    
+    if (matchingCells.length > 0) {
+      matchingCells[0].textContent = cellData.value;
+    }
+  });
+}
+
+function resetAllGrids(silent = false) {
+  if (!silent && !confirm("Are you sure you want to reset ALL grids? This cannot be undone.")) {
+    return;
+  }
+  
+  document.querySelectorAll(".data-table td[data-type]").forEach(cell => {
+    cell.textContent = "0";
+  });
+  
+  // Reset grid names and tabs (except first one)
+  gridNames = ["General"];
+  const firstTab = document.querySelector(`.tab[data-grid="grid1"]`);
+  if (firstTab) {
+    firstTab.textContent = "General";
+  }
+  
+  // Remove additional grids
+  const tabs = document.querySelectorAll(".tab:not([data-grid='grid1'])");
+  const grids = document.querySelectorAll(".table-container:not(#grid1)");
+  
+  tabs.forEach(tab => tab.remove());
+  grids.forEach(grid => grid.remove());
+  
+  gridCount = 1;
+  undoStack = [];
+  updateTotalCells();
+  autoSaveGridData();
+  
+  if (!silent) {
+    showToast("All grids reset!");
+  }
+}
+
+      function filterAgeGroups() {
+        const searchTerm = searchInput.value.toLowerCase();
+        document.querySelectorAll(".age-group-cell").forEach(ageGroupCell => {
+          const rowText = ageGroupCell.textContent.toLowerCase();
+          const row = ageGroupCell.parentElement;
+          row.style.display = rowText.includes(searchTerm) ? "table-row" : "none";
+        });
+      }
+
+      function toggleDarkMode() {
+        document.body.classList.toggle("dark-mode");
+        localStorage.setItem("darkMode", document.body.classList.contains("dark-mode"));
+        themeToggle.textContent = document.body.classList.contains("dark-mode") ? "☀️ Light Mode" : "🌙 Dark Mode";
+        Feedback.trigger("button");
+      }
+
+      function checkDarkMode() {
+        if (localStorage.getItem("darkMode") === "true") {
+          document.body.classList.add("dark-mode");
+          themeToggle.textContent = "☀️ Light Mode";
+        }
+      }
+
+     function autoSaveGridData() {
+  const saveData = {
+    gridNames: gridNames,
+    gridData: {}
+  };
+  
+  document.querySelectorAll(".table-container").forEach(container => {
+    const gridId = container.id;
+    const cells = [];
+    container.querySelectorAll("td[data-type]").forEach(cell => {
+      cells.push({
+        type: cell.dataset.type,
+        ageGroup: cell.dataset.ageGroup,
+        value: cell.textContent
+      });
+    });
+    saveData.gridData[gridId] = cells;
+  });
+  
+  localStorage.setItem("gridData", JSON.stringify(saveData));
+}
+
+      function loadGridData() {
+  const savedData = JSON.parse(localStorage.getItem("gridData"));
+  if (!savedData) return;
+  
+  // Load grid names if they exist
+  if (savedData.gridNames && Array.isArray(savedData.gridNames)) {
+    gridNames = savedData.gridNames;
+    
+    // Update tab names
+    document.querySelectorAll('.tab').forEach((tab, index) => {
+      const nameSpan = tab.querySelector('.tab-name');
+      if (nameSpan && savedData.gridNames[index]) {
+        nameSpan.textContent = savedData.gridNames[index];
+      }
+    });
+  }
+  
+  // Load cell data
+  if (savedData.gridData) {
+    Object.keys(savedData.gridData).forEach(gridId => {
+      const container = document.getElementById(gridId);
+      if (container) {
+        savedData.gridData[gridId].forEach(cellData => {
+          const cell = container.querySelector(
+            `td[data-ageGroup="${cellData.ageGroup}"][data-type="${cellData.type}"]`
+          );
+          if (cell) cell.textContent = cellData.value;
+        });
+      }
+    });
+  }
+  
+  updateTotalCells();
+}
+
+      function showToast(message, isError = false) {
+        Feedback.trigger(isError ? "error" : "success");
+        const toast = document.createElement("div");
+        toast.textContent = message;
+        toast.style.position = "fixed";
+        toast.style.bottom = "20px";
+        toast.style.left = "50%";
+        toast.style.transform = "translateX(-50%)";
+        toast.style.backgroundColor = "rgba(0,0,0,0.7)";
+        toast.style.color = "white";
+        toast.style.padding = "10px 20px";
+        toast.style.borderRadius = "5px";
+        toast.style.zIndex = "1000";
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+          toast.style.opacity = "0";
+          setTimeout(() => toast.remove(), 300);
+        }, 3000);
+      }
+
+      function confirmExit(e) {
+        e.preventDefault();
+        return e.returnValue = "Are you sure you want to leave? Changes may not be saved.";
+      }
+	  
+	  
+	  
+	  
+	  
+	  function sumMarkedGrids() {
+  Feedback.trigger("button");
+  
+  // Create and show the grid selection popup
+  const popup = document.getElementById("gridSelectionPopup");
+  const list = document.getElementById("gridSelectionList");
+  list.innerHTML = "";
+  
+  // Get all grids
+  const allGrids = Array.from(document.querySelectorAll(".tab")).map(tab => ({
+    id: tab.dataset.grid,
+    name: tab.textContent
+  }));
+  
+  if (allGrids.length < 2) {
+    showToast("You need at least 2 grids to sum", true);
+    return;
+  }
+  
+  // Create checkboxes for each grid
+  allGrids.forEach(grid => {
+    const item = document.createElement("div");
+    item.className = "grid-selection-item";
+    
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.id = `grid-select-${grid.id}`;
+    checkbox.value = grid.id;
+    
+    const label = document.createElement("label");
+    label.htmlFor = `grid-select-${grid.id}`;
+    label.textContent = grid.name;
+    
+    item.appendChild(checkbox);
+    item.appendChild(label);
+    list.appendChild(item);
+  });
+  
+  popup.style.display = "block";
+  
+  // Add event listeners for the popup buttons
+  document.getElementById("confirmGridSelection").onclick = () => {
+    const selectedGrids = Array.from(list.querySelectorAll("input[type='checkbox']:checked"))
+      .map(checkbox => ({
+        id: checkbox.value,
+        name: allGrids.find(g => g.id === checkbox.value).name
+      }));
+    
+    if (selectedGrids.length < 2) {
+      showToast("Please select at least 2 grids to sum", true);
+      return;
+    }
+    
+    createSumGrid(selectedGrids);
+    popup.style.display = "none";
+  };
+  
+  document.getElementById("cancelGridSelection").onclick = () => {
+    popup.style.display = "none";
+  };
+}
+
+function createSumGrid(selectedGrids) {
+  // Create a new grid for the sum
+  const sumGridName = selectedGrids.map(g => g.name).join(" + ") + " (Sum)";
+  gridCount += 1;
+  gridNames.push(sumGridName);
+  createTab(gridCount, true, sumGridName);
+  
+  // Get the new grid's container
+  const sumContainer = document.getElementById(`grid${gridCount}`);
+  const sumTable = sumContainer.querySelector(".data-table");
+  
+  // Sum the data from selected grids
+  selectedGrids.forEach(grid => {
+    const gridContainer = document.getElementById(grid.id);
+    if (!gridContainer) return;
+    
+    const rows = gridContainer.querySelectorAll("tbody tr");
+    rows.forEach((row, rowIndex) => {
+      const sumRow = sumTable.querySelector(`tbody tr:nth-child(${rowIndex + 1})`);
+      if (!sumRow) return;
+      
+      // Sum male cells
+      const maleCell = row.querySelector(".male-cell");
+      const sumMaleCell = sumRow.querySelector(".male-cell");
+      if (maleCell && sumMaleCell) {
+        const currentValue = parseInt(sumMaleCell.textContent) || 0;
+        const addValue = parseInt(maleCell.textContent) || 0;
+        sumMaleCell.textContent = currentValue + addValue;
+      }
+      
+      // Sum female cells
+      const femaleCell = row.querySelector(".female-cell");
+      const sumFemaleCell = sumRow.querySelector(".female-cell");
+      if (femaleCell && sumFemaleCell) {
+        const currentValue = parseInt(sumFemaleCell.textContent) || 0;
+        const addValue = parseInt(femaleCell.textContent) || 0;
+        sumFemaleCell.textContent = currentValue + addValue;
+      }
+    });
+  });
+  
+  // Update totals
+  updateTotalCells();
+  showToast(`Created sum of ${selectedGrids.length} grids`);
+}
+
+
+
+	  
+	  
+	function showAgeAggregationPopup() {
+  Feedback.trigger("button");
+  
+  const popup = document.getElementById("ageAggregationPopup");
+  const gridList = document.getElementById("ageAggregationGridList");
+  
+  // Clear previous selections
+  gridList.innerHTML = "";
+  
+  // Get all grids and create checkboxes
+  const allGrids = Array.from(document.querySelectorAll(".tab")).map(tab => ({
+    id: tab.dataset.grid,
+    name: tab.textContent
+  }));
+  
+  allGrids.forEach(grid => {
+    const item = document.createElement("div");
+    item.className = "grid-selection-item";
+    
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.id = `age-aggregate-select-${grid.id}`;
+    checkbox.value = grid.id;
+    checkbox.checked = true; // Default to checked
+    
+    const label = document.createElement("label");
+    label.htmlFor = `age-aggregate-select-${grid.id}`;
+    label.textContent = grid.name;
+    
+    item.appendChild(checkbox);
+    item.appendChild(label);
+    gridList.appendChild(item);
+  });
+  
+  // Calculate and show initial aggregation with all grids selected
+  calculateAgeAggregation();
+  
+  // Add event listeners for grid selection changes
+  gridList.querySelectorAll("input[type='checkbox']").forEach(checkbox => {
+    checkbox.addEventListener("change", calculateAgeAggregation);
+  });
+  
+  popup.style.display = "block";
+  
+  // Update button event listeners
+  document.getElementById("createAggregatedGrid").onclick = () => {
+    createAggregatedAgeGroupGrid();
+    popup.style.display = "none";
+  };
+  
+  document.getElementById("closeAgeAggregation").onclick = () => {
+    popup.style.display = "none";
+  };
+}
+
+function calculateAgeAggregation() {
+  // Get selected grids
+  const selectedGrids = Array.from(
+    document.querySelectorAll("#ageAggregationGridList input[type='checkbox']:checked")
+  ).map(checkbox => checkbox.value);
+  
+  // Define age groups
+  const minorGroups = ["<1", "1-4", "5-9", "10-14"];
+  const adultGroups = ["15-19", "20-24", "25-29", "30-34", "35-39", 
+                      "40-44", "45-49", "50-54", "55-59", "60-64", "65+"];
+  
+  // Initialize results
+  const minorResults = {};
+  const adultResults = {};
+  const totals = { minors: { male: 0, female: 0 }, adults: { male: 0, female: 0 } };
+  
+  minorGroups.forEach(group => {
+    minorResults[group] = { male: 0, female: 0 };
+  });
+  
+  adultGroups.forEach(group => {
+    adultResults[group] = { male: 0, female: 0 };
+  });
+  
+  // Sum data from selected grids
+  selectedGrids.forEach(gridId => {
+    const container = document.getElementById(gridId);
+    if (!container) return;
+    
+    container.querySelectorAll("td[data-type]").forEach(cell => {
+      const ageGroup = cell.dataset.ageGroup;
+      const type = cell.dataset.type;
+      const value = parseInt(cell.textContent) || 0;
+      
+      if (minorGroups.includes(ageGroup)) {
+        minorResults[ageGroup][type] += value;
+        totals.minors[type] += value;
+      } else if (adultGroups.includes(ageGroup)) {
+        adultResults[ageGroup][type] += value;
+        totals.adults[type] += value;
+      }
+    });
+  });
+  
+  // Update the display
+  updateAggregationDisplay(minorResults, adultResults, totals);
+}
+
+
+
+
+
+
+
+
+function updateAggregationDisplay(minorResults, adultResults, totals) {
+  const minorsTable = document.querySelector("#ageAggregationPopup .aggregation-table:first-of-type tbody");
+  const adultsTable = document.querySelector("#ageAggregationPopup .aggregation-table:last-of-type tbody");
+  
+  minorsTable.innerHTML = "";
+  adultsTable.innerHTML = "";
+  
+  // Calculate minors totals
+  let minorMaleTotal = 0;
+  let minorFemaleTotal = 0;
+  
+  // Populate minors table
+  Object.entries(minorResults).forEach(([group, counts]) => {
+    minorMaleTotal += counts.male;
+    minorFemaleTotal += counts.female;
+    
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${group}</td>
+      <td>${counts.male}</td>
+      <td>${counts.female}</td>
+    `;
+    minorsTable.appendChild(row);
+  });
+  
+  // Add minors totals row
+  const minorTotalRow = document.createElement("tr");
+  minorTotalRow.className = "total-row";
+  minorTotalRow.innerHTML = `
+    <td>Total Minors</td>
+    <td>${minorMaleTotal}</td>
+    <td>${minorFemaleTotal}</td>
+  `;
+  minorsTable.appendChild(minorTotalRow);
+  
+  // Calculate adults totals
+  let adultMaleTotal = 0;
+  let adultFemaleTotal = 0;
+  
+  // Populate adults table
+  Object.entries(adultResults).forEach(([group, counts]) => {
+    adultMaleTotal += counts.male;
+    adultFemaleTotal += counts.female;
+    
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${group}</td>
+      <td>${counts.male}</td>
+      <td>${counts.female}</td>
+    `;
+    adultsTable.appendChild(row);
+  });
+  
+  // Add adults totals row
+  const adultTotalRow = document.createElement("tr");
+  adultTotalRow.className = "total-row";
+  adultTotalRow.innerHTML = `
+    <td>Total Adults</td>
+    <td>${adultMaleTotal}</td>
+    <td>${adultFemaleTotal}</td>
+  `;
+  adultsTable.appendChild(adultTotalRow);
+  
+  // Update the summary totals
+  document.getElementById("totalMinors").textContent = 
+    `Male: ${totals.minors.male}, Female: ${totals.minors.female} (Total: ${totals.minors.male + totals.minors.female})`;
+  
+  document.getElementById("totalAdults").textContent = 
+    `Male: ${totals.adults.male}, Female: ${totals.adults.female} (Total: ${totals.adults.male + totals.adults.female})`;
+}
+
+
+
+
+
+
+
+
+
+
+
+	  
+	
+	  
+	  
+	  
+	  
+	  
+    });
+  </script>
+</body>
+</html>
+
+
+Yours truly: MuSaNgU cHeLu
+
+
+
