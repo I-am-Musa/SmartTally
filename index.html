@@ -480,6 +480,170 @@
 }
 
 
+
+
+
+
+
+
+/* Add to your existing CSS */
+.last-entry {
+  animation: lastEntryPulse 1.5s ease-out;
+  box-shadow: 0 0 0 2px var(--accent);
+  position: relative;
+  z-index: 10;
+}
+
+@keyframes lastEntryPulse {
+  0% { transform: scale(1); box-shadow: 0 0 0 2px var(--accent); }
+  50% { transform: scale(1.02); box-shadow: 0 0 0 5px var(--accent); }
+  100% { transform: scale(1); box-shadow: 0 0 0 2px var(--accent); }
+}
+
+.last-entry::after {
+  content: "LAST";
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  background-color: var(--accent);
+  color: white;
+  font-size: 10px;
+  padding: 2px 5px;
+  border-radius: 10px;
+  z-index: 11;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#recentEntriesSidebar {
+  position: fixed;
+  right: 0;
+  top: 0;
+  width: 250px;
+  height: 100vh;
+  background-color: var(--background);
+  border-left: 1px solid var(--border);
+  padding: 15px;
+  overflow-y: auto;
+  transform: translateX(100%);
+  transition: transform 0.3s ease;
+  z-index: 100;
+}
+
+#recentEntriesSidebar.show {
+  transform: translateX(0);
+}
+
+#recentEntriesSidebar h3 {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0;
+}
+
+#recentEntriesList {
+  list-style: none;
+  padding: 0;
+}
+
+#recentEntriesList li {
+  padding: 8px;
+  margin-bottom: 5px;
+  background-color: rgba(0,0,0,0.05);
+  border-radius: 4px;
+  display: flex;
+  justify-content: space-between;
+}
+
+#clearRecent {
+  cursor: pointer;
+  padding: 0 5px;
+}
+
+.toggle-sidebar {
+  position: fixed;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  background-color: var(--primary);
+  color: white;
+  padding: 10px 5px;
+  border-radius: 5px 0 0 5px;
+  cursor: pointer;
+  z-index: 99;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+.last-entry {
+  animation: lastEntryPulse 1.5s ease-out;
+  box-shadow: 0 0 0 2px var(--accent);
+  position: relative;
+  z-index: 10;
+}
+
+@keyframes lastEntryPulse {
+  0% { transform: scale(1); box-shadow: 0 0 0 2px var(--accent); }
+  50% { transform: scale(1.02); box-shadow: 0 0 0 5px var(--accent); }
+  100% { transform: scale(1); box-shadow: 0 0 0 2px var(--accent); }
+}
+
+.last-entry::after {
+  content: "LAST";
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  background-color: var(--accent);
+  color: white;
+  font-size: 10px;
+  padding: 2px 5px;
+  border-radius: 10px;
+  z-index: 11;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 	
   </style>
 </head>
@@ -557,6 +721,23 @@
     <button id="closeAgeAggregation">Close</button>
   </div>
 </div>
+	
+	
+	
+	
+	<div id="recentEntriesSidebar">
+  <h3>Recent Entries <span id="clearRecent">✕</span></h3>
+  <ul id="recentEntriesList"></ul>
+</div>
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	
 	
 	
@@ -1150,24 +1331,119 @@ function editTabName(tab) {
         editOverlay.addEventListener('click', finishEdit);
       }
 
-      function incrementCell(cell) {
-        Feedback.trigger("increment");
-        const previousValue = parseInt(cell.textContent) || 0;
-        const newValue = previousValue + 1;
-        
-        undoStack.push({
-          cell,
-          previousValue,
-          action: `${cell.dataset.ageGroup} ${cell.dataset.type}: ${previousValue} → ${newValue}`,
-          gridId: cell.closest('.table-container').id
-        });
 
-        if (undoStack.length > UNDO_LIMIT) undoStack.shift();
-        cell.textContent = newValue;
-        updateTotalCells();
-        highlightCell(cell);
-        autoSaveGridData();
-      }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+let lastModifiedCell = null;
+
+function incrementCell(cell) {
+  Feedback.trigger("increment");
+  const previousValue = parseInt(cell.textContent) || 0;
+  const newValue = previousValue + 1;
+  
+  undoStack.push({
+    cell,
+    previousValue,
+    action: `${cell.dataset.ageGroup} ${cell.dataset.type}: ${previousValue} → ${newValue}`,
+    gridId: cell.closest('.table-container').id
+  });
+
+  if (undoStack.length > UNDO_LIMIT) undoStack.shift();
+  cell.textContent = newValue;
+  
+  // Update last modified cell highlighting
+  if (lastModifiedCell) {
+    lastModifiedCell.classList.remove("last-entry");
+  }
+  cell.classList.add("last-entry");
+  lastModifiedCell = cell;
+  
+  updateTotalCells();
+  autoSaveGridData();
+}
+
+// And in the finishEdit function inside startEditing:
+function finishEdit() {
+  const newValue = parseInt(input.value) || 0;
+  const previousValue = parseInt(value) || 0;
+  
+  if (newValue !== previousValue) {
+    undoStack.push({
+      cell,
+      previousValue,
+      action: `Edited ${cell.dataset.ageGroup} ${cell.dataset.type} from ${previousValue} to ${newValue}`,
+      gridId: cell.closest('.table-container').id
+    });
+    
+    if (undoStack.length > UNDO_LIMIT) undoStack.shift();
+    cell.textContent = newValue;
+    
+    // Update last modified cell highlighting
+    if (lastModifiedCell) {
+      lastModifiedCell.classList.remove("last-entry");
+    }
+    cell.classList.add("last-entry");
+    lastModifiedCell = cell;
+    
+    updateTotalCells();
+    autoSaveGridData();
+  } else {
+    cell.textContent = value;
+  }
+  cleanupEdit();
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
       function undoLastChangeForAgeGroup(ageGroup, tableContainer) {
         const gridId = tableContainer.id;
@@ -1981,6 +2257,4 @@ function updateAggregationDisplay(minorResults, adultResults, totals) {
 
 
 Yours truly: MuSaNgU cHeLu
-
-
 
