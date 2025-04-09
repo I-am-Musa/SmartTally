@@ -1,17 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
-	<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-R7W6515Y3E"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-R7W6515Y3E');
-</script>
-	
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>LazyMan's Tallysheet</title>
@@ -655,6 +644,33 @@
 
 
 
+
+
+
+	  <head>
+  <!-- Your existing meta tags, title, and CSS... -->
+  
+  <!-- PASTE GA4 CODE HERE (before </head>) -->
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-R7W6515Y3E"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-R7W6515Y3E');
+  </script>
+</head>
+
+
+
+
+
+
+
+
+
+
+
 	
   </style>
 </head>
@@ -794,6 +810,37 @@
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       // Configuration
+
+
+
+
+
+
+	    document.addEventListener("DOMContentLoaded", () => {
+  // ======================
+  // GA4 EVENT TRACKING (ADD THIS FIRST)
+  // ======================
+  const trackEvent = (eventName, params = {}) => {
+    gtag('event', eventName, {
+      app_name: "LazyMan's Tallysheet",
+      ...params
+    });
+  };
+
+  // Track initial load
+  trackEvent('app_init', {
+    dark_mode: localStorage.getItem("darkMode") === "true",
+    sound_enabled: localStorage.getItem("soundEnabled") !== "false",
+    vibration_enabled: localStorage.getItem("vibrationEnabled") !== "false"
+  });
+
+  // ... rest of your existing JavaScript ...
+});
+
+
+
+
+	    
       const CORRECT_PASSWORD = "Cowie";
       const AGE_GROUPS = [
         { label: "<1", range: "<1" },
