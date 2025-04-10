@@ -2347,35 +2347,6 @@ function updateAggregationDisplay(minorResults, adultResults, totals) {
 
 
 
-	    // Track grid interactions
-function incrementCell(cell) {
-  trackEvent('cell_incremented', {
-    age_group: cell.dataset.ageGroup,
-    gender: cell.dataset.type,
-    new_value: parseInt(cell.textContent) + 1
-  });
-  // ... rest of your existing code
-}
-
-// Track exports
-function exportToExcel() {
-  trackEvent('export', {
-    format: 'excel',
-    grid_count: document.querySelectorAll(".tab").length
-  });
-  // ... rest of your existing code
-}
-// Track tab switches
-function setActiveTab(gridId) {
-  const tabName = document.querySelector(`.tab[data-grid="${gridId}"]`).textContent;
-  trackEvent('tab_switch', {
-    tab_name: tabName,
-    tab_position: Array.from(document.querySelectorAll(".tab")).findIndex(tab => tab.dataset.grid === gridId) + 1
-  });
-  // ... rest of your existing code
-}
-
-
      
 
 
