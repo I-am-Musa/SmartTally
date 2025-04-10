@@ -2320,6 +2320,128 @@ function updateAggregationDisplay(minorResults, adultResults, totals) {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	    // Track grid interactions
+function incrementCell(cell) {
+  trackEvent('cell_incremented', {
+    age_group: cell.dataset.ageGroup,
+    gender: cell.dataset.type,
+    new_value: parseInt(cell.textContent) + 1
+  });
+  // ... rest of your existing code
+}
+
+// Track exports
+function exportToExcel() {
+  trackEvent('export', {
+    format: 'excel',
+    grid_count: document.querySelectorAll(".tab").length
+  });
+  // ... rest of your existing code
+}
+// Track tab switches
+function setActiveTab(gridId) {
+  const tabName = document.querySelector(`.tab[data-grid="${gridId}"]`).textContent;
+  trackEvent('tab_switch', {
+    tab_name: tabName,
+    tab_position: Array.from(document.querySelectorAll(".tab")).findIndex(tab => tab.dataset.grid === gridId) + 1
+  });
+  // ... rest of your existing code
+}
+
+<script>
+  // Track page load performance
+  window.addEventListener('load', function() {
+    setTimeout(function(){
+      trackEvent('page_performance', {
+        load_time: window.performance.timing.loadEventEnd - window.performance.timing.navigationStart,
+        dom_ready: window.performance.timing.domComplete - window.performance.timing.domLoading
+      });
+    }, 0);
+  });
+</script>
+
+
+// Add to your existing error handling
+function showToast(message, isError = false) {
+  if(isError) {
+    trackEvent('error_occurred', {
+      error_message: message.substring(0, 100) // Truncate to avoid PII
+    });
+  }
+  // ... rest of your existing code
+}
+
+// After your gtag config
+gtag('set', 'user_properties', {
+  dark_mode_user: localStorage.getItem("darkMode") === "true",
+  sound_enabled: localStorage.getItem("soundEnabled") !== "false",
+  device_type: /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' : 'desktop'
+});
+
+
+// Track how far users scroll
+window.addEventListener('scroll', function() {
+  const scrollPercent = Math.round((window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 100);
+  trackEvent('scroll_depth', {
+    percentage: scrollPercent
+  });
+}, {once: true}); // Only fire once per page
+
+
+
+// Track session start/end
+let lastActivity = Date.now();
+const sessionTimeout = 30 * 60 * 1000; // 30 minutes
+
+function checkSession() {
+  if(Date.now() - lastActivity > sessionTimeout) {
+    trackEvent('session_end', {
+      duration: (Date.now() - lastActivity) / 1000
+    });
+  }
+}
+
+// Update on user interaction
+document.addEventListener('click', function() {
+  lastActivity = Date.now();
+});
+
+// Check every minute
+setInterval(checkSession, 60000);
+
+
+
+
+
+
+
 	  
 	
 	  
