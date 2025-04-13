@@ -835,10 +835,16 @@ document.addEventListener("DOMContentLoaded", () => {
      });
    };
  
-<head>
-  <!-- Your existing meta tags -->
-  
-  
+   // Track initial load
+   trackEvent('app_init', {
+     dark_mode: localStorage.getItem("darkMode") === "true",
+     sound_enabled: localStorage.getItem("soundEnabled") !== "false",
+     vibration_enabled: localStorage.getItem("vibrationEnabled") !== "false"
+   });
+ 
+   // ... rest of your existing JavaScript ...
+ });
+
 
 
 
@@ -2363,5 +2369,4 @@ function updateAggregationDisplay(minorResults, adultResults, totals) {
 </html>
 
 
-Yours truly: Mu54N6U_Ch3Lu
-
+Yours truly: 🤖Mu54N6U_Ch3Lu
