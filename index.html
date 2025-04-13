@@ -665,12 +665,7 @@
 
 
 
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'G-R7W6515Y3E');
-</script>
+
 
 
 
@@ -843,53 +838,7 @@ document.addEventListener("DOMContentLoaded", () => {
 <head>
   <!-- Your existing meta tags -->
   
-  <!-- Original GA4 Tracking Code -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-R7W6515Y3E"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-R7W6515Y3E');
-  </script>
-
-  <!-- NEW Event Tracking Code -->
-  <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      const trackEvent = (eventName, params = {}) => {
-        gtag('event', eventName, {
-          app_name: "LazyMan's Tallysheet",
-          ...params
-        });
-      };
-      
-      trackEvent('app_init', {
-        dark_mode: localStorage.getItem("darkMode") === "true",
-        sound_enabled: localStorage.getItem("soundEnabled") !== "false",
-        vibration_enabled: localStorage.getItem("vibrationEnabled") !== "false"
-      });
-
-      // Page view tracking
-      gtag('event', 'page_view', {
-        page_title: document.title,
-        page_location: window.location.href,
-        page_path: window.location.pathname
-      });
-
-      // Button click tracking
-      document.querySelectorAll('button').forEach(btn => {
-        btn.addEventListener('click', () => {
-          gtag('event', 'button_click', {
-            button_id: btn.id,
-            button_text: btn.textContent.trim()
-          });
-        });
-      });
-    });
-  </script>
-  <!-- End of new code -->
   
-  <!-- Rest of your head content -->
-</head>
 
 
 
