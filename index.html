@@ -359,6 +359,79 @@
     }
 	
 	
+	/* EID Calculator Styles */
+#eidCalculatorPopup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: var(--background);
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+  z-index: 1000;
+  max-width: 90%;
+  width: 400px;
+  border: 1px solid var(--border);
+  display: none;
+}
+
+.eid-results {
+  margin-top: 15px;
+  border-top: 1px solid var(--border);
+  padding-top: 15px;
+}
+
+.eid-result-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(0,0,0,0.1);
+}
+
+.eid-test-name {
+  font-weight: bold;
+}
+
+.eid-test-date {
+  color: var(--primary);
+}
+
+.eid-highlight {
+  background-color: rgba(74, 111, 165, 0.1);
+  border-radius: 4px;
+}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	
 	
 	#ageAggregationPopup {
@@ -784,7 +857,54 @@
 	
 	
 	
-	
+	<!-- EID Calculator Popup -->
+<div id="eidCalculatorPopup">
+  <h3>HIV EID Date Calculator</h3>
+  <div>
+    <label for="eidDob">Date of Birth:</label>
+    <input type="date" id="eidDob" style="margin-left: 10px;">
+  </div>
+  
+  <div class="eid-results" id="eidResults">
+    <div class="eid-result-row">
+      <span class="eid-test-name">Birth</span>
+      <span class="eid-test-date" id="eidBirth"></span>
+    </div>
+    <div class="eid-result-row">
+      <span class="eid-test-name">6 Weeks</span>
+      <span class="eid-test-date" id="eid6Weeks"></span>
+    </div>
+    <div class="eid-result-row">
+      <span class="eid-test-name">3 Months</span>
+      <span class="eid-test-date" id="eid3Months"></span>
+    </div>
+    <div class="eid-result-row">
+      <span class="eid-test-name">6 Months</span>
+      <span class="eid-test-date" id="eid6Months"></span>
+    </div>
+    <div class="eid-result-row">
+      <span class="eid-test-name">9 Months</span>
+      <span class="eid-test-date" id="eid9Months"></span>
+    </div>
+    <div class="eid-result-row">
+      <span class="eid-test-name">12 Months</span>
+      <span class="eid-test-date" id="eid12Months"></span>
+    </div>
+    <div class="eid-result-row">
+      <span class="eid-test-name">18 Months</span>
+      <span class="eid-test-date" id="eid18Months"></span>
+    </div>
+    <div class="eid-result-row">
+      <span class="eid-test-name">24 Months</span>
+      <span class="eid-test-date" id="eid24Months"></span>
+    </div>
+  </div>
+  
+  <div class="popup-buttons">
+    <button id="calculateEidDates">Calculate</button>
+    <button id="closeEidCalculator">Close</button>
+  </div>
+</div>
 	
 	
 	
@@ -867,7 +987,107 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 
+    // Add this with your other DOM element selectors
+const eidCalculatorBtn = document.createElement('button');
+eidCalculatorBtn.id = 'eidCalculatorBtn';
+eidCalculatorBtn.textContent = '🩺 EID Calculator';
+document.querySelector('.controls').appendChild(eidCalculatorBtn);
 
+// Add these with your other element references
+const eidCalculatorPopup = document.getElementById('eidCalculatorPopup');
+const eidDobInput = document.getElementById('eidDob');
+const calculateEidDatesBtn = document.getElementById('calculateEidDates');
+const closeEidCalculatorBtn = document.getElementById('closeEidCalculator');
+
+// Add event listeners
+eidCalculatorBtn.addEventListener('click', () => {
+  Feedback.trigger("button");
+  eidCalculatorPopup.style.display = 'block';
+  // Set default date to today
+  const today = new Date().toISOString().split('T')[0];
+  eidDobInput.value = today;
+  calculateEidDates(); // Calculate with default date
+});
+
+closeEidCalculatorBtn.addEventListener('click', () => {
+  eidCalculatorPopup.style.display = 'none';
+});
+
+calculateEidDatesBtn.addEventListener('click', calculateEidDates);
+eidDobInput.addEventListener('change', calculateEidDates);
+
+// EID Calculation Function
+function calculateEidDates() {
+  const dob = new Date(eidDobInput.value);
+  if (isNaN(dob.getTime())) return;
+  
+  const formatDate = (date) => {
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      weekday: 'short'
+    });
+  };
+  
+  // Birth date
+  document.getElementById('eidBirth').textContent = formatDate(dob);
+  
+  // 6 Weeks (42 days)
+  const sixWeeks = new Date(dob);
+  sixWeeks.setDate(dob.getDate() + 42);
+  document.getElementById('eid6Weeks').textContent = formatDate(sixWeeks);
+  
+  // 3 Months (90 days)
+  const threeMonths = new Date(dob);
+  threeMonths.setMonth(dob.getMonth() + 3);
+  document.getElementById('eid3Months').textContent = formatDate(threeMonths);
+  
+  // 6 Months
+  const sixMonths = new Date(dob);
+  sixMonths.setMonth(dob.getMonth() + 6);
+  document.getElementById('eid6Months').textContent = formatDate(sixMonths);
+  
+  // 9 Months
+  const nineMonths = new Date(dob);
+  nineMonths.setMonth(dob.getMonth() + 9);
+  document.getElementById('eid9Months').textContent = formatDate(nineMonths);
+  
+  // 12 Months
+  const twelveMonths = new Date(dob);
+  twelveMonths.setMonth(dob.getMonth() + 12);
+  document.getElementById('eid12Months').textContent = formatDate(twelveMonths);
+  
+  // 18 Months
+  const eighteenMonths = new Date(dob);
+  eighteenMonths.setMonth(dob.getMonth() + 18);
+  document.getElementById('eid18Months').textContent = formatDate(eighteenMonths);
+  
+  // 24 Months
+  const twentyFourMonths = new Date(dob);
+  twentyFourMonths.setMonth(dob.getMonth() + 24);
+  document.getElementById('eid24Months').textContent = formatDate(twentyFourMonths);
+  
+  // Highlight upcoming tests
+  const today = new Date();
+  const allTestDates = [
+    { element: document.getElementById('eidBirth'), date: dob },
+    { element: document.getElementById('eid6Weeks'), date: sixWeeks },
+    { element: document.getElementById('eid3Months'), date: threeMonths },
+    { element: document.getElementById('eid6Months'), date: sixMonths },
+    { element: document.getElementById('eid9Months'), date: nineMonths },
+    { element: document.getElementById('eid12Months'), date: twelveMonths },
+    { element: document.getElementById('eid18Months'), date: eighteenMonths },
+    { element: document.getElementById('eid24Months'), date: twentyFourMonths }
+  ];
+  
+  allTestDates.forEach(test => {
+    test.element.parentElement.classList.remove('eid-highlight');
+    if (test.date > today) {
+      test.element.parentElement.classList.add('eid-highlight');
+    }
+  });
+}
 
 
 
@@ -2382,4 +2602,4 @@ function updateAggregationDisplay(minorResults, adultResults, totals) {
 </html>
 
 
-Yours truly: 🤖Mu54N6U_Ch3Lu
+Yours truly: 🤖Mu54N6U_Ch3Lu.
