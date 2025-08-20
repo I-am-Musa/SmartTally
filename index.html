@@ -407,7 +407,47 @@
 	
 	
 	
-	
+/* Drug Pickup Popup Styles */
+#drugPickupPopup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: var(--background);
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+  z-index: 1000;
+  max-width: 90%;
+  width: 400px;
+  border: 1px solid var(--border);
+  display: none;
+}
+
+.drug-pickup-field {
+  margin-bottom: 15px;
+}
+
+.drug-pickup-field label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+.drug-pickup-results {
+  margin-top: 15px;
+  border-top: 1px solid var(--border);
+  padding-top: 15px;
+}
+
+.drug-refill-date {
+  font-weight: bold;
+  color: var(--primary);
+  margin-top: 10px;
+  padding: 8px;
+  background-color: rgba(74, 111, 165, 0.1);
+  border-radius: 4px;
+}	
 	
 	
 	
@@ -902,7 +942,35 @@
 	
 	
 	
-	
+<!-- Drug Pickup Popup -->
+<div id="drugPickupPopup">
+  <h3>Drug Dispensing Calculator</h3>
+  
+  <div class="drug-pickup-field">
+    <label for="drugDispenseDate">Dispensing Date:</label>
+    <input type="date" id="drugDispenseDate">
+  </div>
+  
+  <div class="drug-pickup-field">
+    <label for="drugQuantity">Quantity Dispensed:</label>
+    <input type="number" id="drugQuantity" min="1" value="30">
+  </div>
+  
+  <div class="drug-pickup-field">
+    <label for="dailyDosage">Daily Dosage (tablets):</label>
+    <input type="number" id="dailyDosage" min="1" value="1">
+  </div>
+  
+  <div class="drug-pickup-results">
+    <h4>Refill Date Calculation:</h4>
+    <div class="drug-refill-date" id="refillDateResult"></div>
+  </div>
+  
+  <div class="popup-buttons">
+    <button id="calculateRefill">Calculate Refill Date</button>
+    <button id="closeDrugPickup">Close</button>
+  </div>
+</div>	
 	
 	
 
@@ -979,6 +1047,85 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 
+// ======================
+// DRUG PICKUP FUNCTIONALITY
+// ======================
+
+// Create and add the Drug Pickup button
+const drugPickupBtn = document.createElement('button');
+drugPickupBtn.id = 'drugPickupBtn';
+drugPickupBtn.textContent = '💊 Drug Pickup';
+document.querySelector('.controls').appendChild(drugPickupBtn);
+
+// Get DOM elements for drug pickup
+const drugPickupPopup = document.getElementById('drugPickupPopup');
+const drugDispenseDateInput = document.getElementById('drugDispenseDate');
+const drugQuantityInput = document.getElementById('drugQuantity');
+const dailyDosageInput = document.getElementById('dailyDosage');
+const refillDateResult = document.getElementById('refillDateResult');
+const calculateRefillBtn = document.getElementById('calculateRefill');
+const closeDrugPickupBtn = document.getElementById('closeDrugPickup');
+
+// Set default date to today
+const today = new Date();
+drugDispenseDateInput.value = today.toISOString().split('T')[0];
+
+// Event listeners for drug pickup functionality
+drugPickupBtn.addEventListener('click', () => {
+  Feedback.trigger("button");
+  drugPickupPopup.style.display = 'block';
+  calculateRefillDate(); // Calculate with default values
+});
+
+closeDrugPickupBtn.addEventListener('click', () => {
+  drugPickupPopup.style.display = 'none';
+});
+
+calculateRefillBtn.addEventListener('click', calculateRefillDate);
+drugDispenseDateInput.addEventListener('change', calculateRefillDate);
+drugQuantityInput.addEventListener('change', calculateRefillDate);
+dailyDosageInput.addEventListener('change', calculateRefillDate);
+
+// Function to calculate the refill date
+function calculateRefillDate() {
+  const dispenseDate = new Date(drugDispenseDateInput.value);
+  if (isNaN(dispenseDate.getTime())) {
+    refillDateResult.textContent = "Please select a valid date";
+    return;
+  }
+  
+  const quantity = parseInt(drugQuantityInput.value) || 30;
+  const dailyDosage = parseInt(dailyDosageInput.value) || 1;
+  
+  if (dailyDosage <= 0) {
+    refillDateResult.textContent = "Daily dosage must be at least 1";
+    return;
+  }
+  
+  // Calculate days supply
+  const daysSupply = Math.floor(quantity / dailyDosage);
+  
+  // Calculate refill date
+  const refillDate = new Date(dispenseDate);
+  refillDate.setDate(dispenseDate.getDate() + daysSupply - 1); // -1 because dispensing day is day 0
+  
+  // Format the result
+  const options = { 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric', 
+    weekday: 'long' 
+  };
+  
+  refillDateResult.innerHTML = `
+    <strong>Days Supply:</strong> ${daysSupply} days<br>
+    <strong>Refill Date:</strong> ${refillDate.toLocaleDateString('en-US', options)}<br>
+    <strong>Dosage:</strong> ${dailyDosage} tablet(s) per day
+  `;
+}
+
+// Initialize the calculation on page load
+calculateRefillDate();
 
     // Add this with your other DOM element selectors
 const eidCalculatorBtn = document.createElement('button');
@@ -2595,6 +2742,6 @@ function updateAggregationDisplay(minorResults, adultResults, totals) {
 </html>
 
 
-Yours truly: 🤖Mu54N6U_Ch3Lu...
+Yours truly: 🤖Mu54N6U_Ch3Lu.
 
 
