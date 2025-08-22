@@ -1233,7 +1233,7 @@ function calculateEidDates() {
 
 	    
       // Configuration   
-      const CORRECT_PASSWORD = "";
+    
       const AGE_GROUPS = [
         { label: "<1", range: "<1" },
         { label: "1-4", range: "1-4" },
@@ -1423,7 +1423,7 @@ function calculateEidDates() {
 
       // DOM Elements
       const lockScreen = document.getElementById("lockScreen");
-      const passwordInput = document.getElementById("passwordInput");
+   
       const unlockButton = document.getElementById("unlockButton");
       const errorMessage = document.getElementById("errorMessage");
       const tabContainer = document.getElementById("tabContainer");
@@ -1458,11 +1458,7 @@ function calculateEidDates() {
         }
       }, { once: true });
 
-      // Event Listeners
-      unlockButton.addEventListener("click", unlockApp);
-      passwordInput.addEventListener("keypress", (e) => {
-        if (e.key === "Enter") unlockApp();
-      });
+      
       closePopupButton.addEventListener("click", () => historyPopup.style.display = "none");
       resetButton.addEventListener("click", resetAllGrids);
       addGridButton.addEventListener("click", addNewGrid);
@@ -1478,26 +1474,7 @@ function calculateEidDates() {
 
       window.addEventListener("beforeunload", confirmExit);
 
-      // Functions
-      function unlockApp() {
-        if (passwordInput.value === CORRECT_PASSWORD) {
-          document.body.classList.add("success-bg");
-          Feedback.trigger("success");
-          setTimeout(() => document.body.classList.remove("success-bg"), 1000);
-          lockScreen.style.display = "none";
-          localStorage.setItem("unlocked", "true");
-        } else {
-          document.body.classList.add("error-bg");
-          Feedback.trigger("error");
-          setTimeout(() => document.body.classList.remove("error-bg"), 1000);
-          errorMessage.style.display = "block";
-          passwordInput.classList.add("shake");
-          setTimeout(() => {
-            passwordInput.classList.remove("shake");
-          }, 500);
-        }
-      }
-
+     
 
 
 
@@ -2742,6 +2719,6 @@ function updateAggregationDisplay(minorResults, adultResults, totals) {
 </html>
 
 
-Yours truly: 🤖Mu54N6U_Ch3Lu.
+Yours truly: 🤖Mu54N6U_Ch3Lu...
 
 
