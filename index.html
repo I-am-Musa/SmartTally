@@ -115,11 +115,18 @@
       border: 1px solid var(--border);
     }
 
-    #soundToggle {
+   #soundToggle {
   display: flex;
   align-items: center;
   gap: 5px;
-  padding: 10px 15px; /* Ensure consistent padding with other buttons */
+  padding: 10px 15px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+#soundToggle:hover {
+  transform: scale(1.05);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
 
 /* Add this to ensure all toggle buttons have consistent styling */
@@ -245,10 +252,6 @@
     .tab.active {
       background-color: var(--primary);
       color: white;
-    }
-
-    #searchContainer {
-      margin-bottom: 15px;
     }
 
     #historyPopup {
@@ -774,7 +777,56 @@
 
 
 
+/* Weekly/Monthly Toggle Styles */
+.mode-toggle-container {
+  display: flex;
+  gap: 5px;
+  margin-bottom: 15px;
+  background-color: rgba(0,0,0,0.05);
+  padding: 10px;
+  border-radius: 8px;
+  flex-wrap: wrap;
+}
 
+.mode-toggle {
+  padding: 10px 15px;
+  background-color: var(--border);
+  color: var(--text);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-weight: bold;
+}
+
+.mode-toggle.active {
+  background-color: var(--primary);
+  color: white;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.mode-toggle:hover {
+  transform: translateY(-2px);
+}
+
+#modeIndicator {
+  padding: 8px 15px;
+  background-color: rgba(74, 111, 165, 0.1);
+  border-radius: 4px;
+  font-weight: bold;
+  margin-left: auto;
+}
+
+@media (max-width: 768px) {
+  .mode-toggle-container {
+    flex-direction: column;
+  }
+  
+  #modeIndicator {
+    margin-left: 0;
+    text-align: center;
+  }
+}
 
 
 
@@ -825,7 +877,12 @@
 </div>
 
 
-
+<!-- Add this after the header-bar but before the controls -->
+<div class="mode-toggle-container">
+  <button id="monthlyMode" class="mode-toggle active">📅 Monthly Mode</button>
+  <button id="weeklyMode" class="mode-toggle">📆 Weekly Mode</button>
+  <div id="modeIndicator">Current: Monthly</div>
+</div>
 
 
 
@@ -939,7 +996,28 @@
   </div>
 </div>
 	
-	
+	<!-- Volume Control Popup -->
+<div id="volumeControlPopup" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: var(--background); padding: 20px; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); z-index: 1000; max-width: 90%; width: 300px; border: 1px solid var(--border);">
+  <h3>Sound Volume Control</h3>
+  <div style="margin: 20px 0;">
+    <label for="volumeSlider" style="display: block; margin-bottom: 10px;">Volume: <span id="volumeValue">100%</span></label>
+    <input type="range" id="volumeSlider" min="10" max="200" value="100" style="width: 100%;">
+    <div style="display: flex; justify-content: space-between; font-size: 12px; margin-top: 5px;">
+      <span>10%</span>
+      <span>100%</span>
+      <span>200%</span>
+    </div>
+  </div>
+  <div style="margin: 15px 0; padding: 10px; background-color: rgba(0,0,0,0.05); border-radius: 4px;">
+    <p style="margin: 0; font-size: 14px; color: var(--text);">
+      Note: Some mobile browsers limit maximum volume. This allows boosting beyond 100%.
+    </p>
+  </div>
+  <div class="popup-buttons">
+    <button id="testVolumeBtn">Test Sound</button>
+    <button id="closeVolumeControl">Close</button>
+  </div>
+</div>
 	
 	
 <!-- Drug Pickup Popup -->
@@ -974,9 +1052,7 @@
 	
 	
 
-    <div id="searchContainer">
-      <input type="text" id="searchInput" placeholder="Search age groups...">
-    </div>
+
 
     <div class="controls">
 	  <button id="vibrationToggle">📳 Vibrations ON</button>
@@ -1040,7 +1116,54 @@ document.addEventListener("DOMContentLoaded", () => {
  });
 
 
+// Add volume control popup to the DOM
+const volumeControlPopup = document.getElementById("volumeControlPopup");
+const volumeSlider = document.getElementById("volumeSlider");
+const volumeValue = document.getElementById("volumeValue");
+const testVolumeBtn = document.getElementById("testVolumeBtn");
+const closeVolumeControl = document.getElementById("closeVolumeControl");
 
+// Update sound toggle to open volume control
+document.getElementById("soundToggle").addEventListener("click", (e) => {
+  e.stopPropagation();
+  if (Sound.enabled) {
+    // Show volume control popup
+    volumeControlPopup.style.display = 'block';
+    volumeSlider.value = Sound.getVolumePercentage();
+    volumeValue.textContent = `${Sound.getVolumePercentage()}%`;
+  } else {
+    // If sound is off, just toggle it on
+    Sound.toggle(true);
+  }
+});
+
+// Volume slider event
+volumeSlider.addEventListener('input', function() {
+  const volumePercent = parseInt(this.value);
+  volumeValue.textContent = `${volumePercent}%`;
+  Sound.setVolume(volumePercent / 100);
+});
+
+volumeSlider.addEventListener('change', function() {
+  Sound.setVolume(parseInt(this.value) / 100);
+});
+
+// Test volume button
+testVolumeBtn.addEventListener('click', () => {
+  Feedback.trigger("test");
+});
+
+// Close volume control
+closeVolumeControl.addEventListener('click', () => {
+  volumeControlPopup.style.display = 'none';
+});
+
+// Close popup when clicking outside
+volumeControlPopup.addEventListener('click', (e) => {
+  if (e.target === volumeControlPopup) {
+    volumeControlPopup.style.display = 'none';
+  }
+});
 
 
 
@@ -1156,6 +1279,10 @@ closeEidCalculatorBtn.addEventListener('click', () => {
 calculateEidDatesBtn.addEventListener('click', calculateEidDates);
 eidDobInput.addEventListener('change', calculateEidDates);
 
+
+
+
+
 // EID Calculation Function
 function calculateEidDates() {
   const dob = new Date(eidDobInput.value);
@@ -1234,24 +1361,202 @@ function calculateEidDates() {
 	    
       // Configuration   
     
-      const AGE_GROUPS = [
-        { label: "<1", range: "<1" },
-        { label: "1-4", range: "1-4" },
-        { label: "5-9", range: "5-9" },
-        { label: "10-14", range: "10-14" },
-        { label: "15-19", range: "15-19" },
-        { label: "20-24", range: "20-24" },
-        { label: "25-29", range: "25-29" },
-        { label: "30-34", range: "30-34" },
-        { label: "35-39", range: "35-39" },
-        { label: "40-44", range: "40-44" },
-        { label: "45-49", range: "45-49" },
-        { label: "50-54", range: "50-54" },
-        { label: "55-59", range: "55-59" },
-        { label: "60-64", range: "60-64" },
-        { label: "65+", range: "65+" }
-      ];
-      const UNDO_LIMIT = 20;
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	// ======================
+// WEEKLY/MONTHLY MODE CONFIGURATION
+// ======================
+const WEEKLY_AGE_GROUPS = [
+  { label: "<1", range: "<1" },
+  { label: "1-4", range: "1-4" },
+  { label: "5-9", range: "5-9" },
+  { label: "10-14", range: "10-14" },
+  { label: "15+", range: "15+" }
+];
+
+const MONTHLY_AGE_GROUPS = [
+  { label: "<1", range: "<1" },
+  { label: "1-4", range: "1-4" },
+  { label: "5-9", range: "5-9" },
+  { label: "10-14", range: "10-14" },
+  { label: "15-19", range: "15-19" },
+  { label: "20-24", range: "20-24" },
+  { label: "25-29", range: "25-29" },
+  { label: "30-34", range: "30-34" },
+  { label: "35-39", range: "35-39" },
+  { label: "40-44", range: "40-44" },
+  { label: "45-49", range: "45-49" },
+  { label: "50-54", range: "50-54" },
+  { label: "55-59", range: "55-59" },
+  { label: "60-64", range: "60-64" },
+  { label: "65+", range: "65+" }
+];
+
+let currentMode = "monthly"; // "monthly" or "weekly"
+let modeData = {
+  monthly: {},
+  weekly: {}
+};
+
+// ======================
+// MODE TOGGLE FUNCTIONS
+// ======================
+function initializeModeToggle() {
+  const monthlyBtn = document.getElementById("monthlyMode");
+  const weeklyBtn = document.getElementById("weeklyMode");
+  const modeIndicator = document.getElementById("modeIndicator");
+  
+  // Load saved mode from localStorage
+  const savedMode = localStorage.getItem("gridMode") || "monthly";
+  setMode(savedMode);
+  
+  monthlyBtn.addEventListener("click", () => {
+    Feedback.trigger("button");
+    setMode("monthly");
+  });
+  
+  weeklyBtn.addEventListener("click", () => {
+    Feedback.trigger("button");
+    setMode("weekly");
+  });
+}
+
+function setMode(mode) {
+  if (mode === currentMode) return;
+  
+  // Save current grid data before switching
+  saveCurrentModeData();
+  
+  // Update mode
+  currentMode = mode;
+  localStorage.setItem("gridMode", mode);
+  
+  // Update UI
+  updateModeUI();
+  
+  // Load data for the new mode
+  loadModeData();
+  
+  showToast(`Switched to ${mode === "weekly" ? "Weekly" : "Monthly"} mode`);
+}
+
+function updateModeUI() {
+  const monthlyBtn = document.getElementById("monthlyMode");
+  const weeklyBtn = document.getElementById("weeklyMode");
+  const modeIndicator = document.getElementById("modeIndicator");
+  
+  // Update button states
+  monthlyBtn.classList.toggle("active", currentMode === "monthly");
+  weeklyBtn.classList.toggle("active", currentMode === "weekly");
+  
+  // Update indicator
+  modeIndicator.textContent = `Current: ${currentMode === "weekly" ? "Weekly" : "Monthly"}`;
+}
+
+function saveCurrentModeData() {
+  // Save all current grid data to the modeData object
+  modeData[currentMode] = {
+    gridNames: [...gridNames],
+    gridCount: gridCount,
+    gridData: {}
+  };
+  
+  // Save individual grid cell data
+  document.querySelectorAll(".table-container").forEach(container => {
+    const gridId = container.id;
+    const cells = [];
+    container.querySelectorAll("td[data-type]").forEach(cell => {
+      cells.push({
+        type: cell.dataset.type,
+        ageGroup: cell.dataset.ageGroup,
+        value: cell.textContent
+      });
+    });
+    modeData[currentMode].gridData[gridId] = cells;
+  });
+  
+  // Save to localStorage
+  localStorage.setItem("modeData", JSON.stringify(modeData));
+}
+
+function loadModeData() {
+  // Load mode data from localStorage
+  const savedModeData = JSON.parse(localStorage.getItem("modeData")) || {};
+  modeData = { ...modeData, ...savedModeData };
+  
+  // Clear existing grids
+  document.querySelectorAll(".table-container").forEach(container => container.remove());
+  document.querySelectorAll(".tab").forEach(tab => tab.remove());
+  tabContainer.innerHTML = "";
+  gridContainer.innerHTML = "";
+  
+  // Reset grid count
+  gridCount = 1;
+  
+  // Get data for current mode
+  const currentData = modeData[currentMode];
+  
+  if (currentData && currentData.gridNames && currentData.gridNames.length > 0) {
+    // Restore grids for this mode
+    gridNames = currentData.gridNames;
+    gridCount = currentData.gridCount || currentData.gridNames.length;
+    
+    // Create tabs and grids
+    gridNames.forEach((name, index) => {
+      const gridIndex = index + 1;
+      const isActive = gridIndex === 1;
+      createTab(gridIndex, isActive, name);
+      
+      // Restore cell data if available
+      const gridId = `grid${gridIndex}`;
+      if (currentData.gridData && currentData.gridData[gridId]) {
+        const container = document.getElementById(gridId);
+        if (container) {
+          currentData.gridData[gridId].forEach(cellData => {
+            const cell = container.querySelector(
+              `td[data-ageGroup="${cellData.ageGroup}"][data-type="${cellData.type}"]`
+            );
+            if (cell) cell.textContent = cellData.value;
+          });
+        }
+      }
+    });
+  } else {
+    // Create default grid for this mode
+    gridNames = [currentMode === "weekly" ? "Weekly General" : "General"];
+    createTab(1, true, gridNames[0]);
+  }
+  
+  updateTotalCells();
+}
+
+// Modify the createTab function to use the correct age groups
+// Find the createTab function (around line 742) and REPLACE it with this:
+
+
+
+// This variable will now be dynamic based on mode
+function getCurrentAgeGroups() {
+  return currentMode === "weekly" ? WEEKLY_AGE_GROUPS : MONTHLY_AGE_GROUPS;
+}
+
+
+
+      const UNDO_LIMIT = 100;
 
       // State
       let undoStack = [];
@@ -1262,87 +1567,120 @@ function calculateEidDates() {
       let isEditing = false;
 
       // ======================
-      // SOUND CONTROLLER
       // ======================
-      const Sound = {
-        enabled: true,
-        audioContext: null,
-        sounds: {
-          increment: { freq: 800, duration: 0.05, type: "sine" },
-          button: { freq: 600, duration: 0.03, type: "square" },
-          undo: { freq: [300, 500, 300], duration: 0.08, type: "sine" },
-          error: { freq: 200, duration: 0.3, type: "sawtooth" },
-          success: { freq: 1000, duration: 0.1, type: "sine" },
-          tabSwitch: { freq: 400, duration: 0.05, type: "sine" },
-          export: { freq: [500, 700, 500], duration: 0.1, type: "square" },
-          editStart: { freq: [600, 400], duration: 0.05, type: "sine" }
-        },
-        
-        init() {
-          try {
-            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-          } catch (e) {
-            console.warn("Web Audio API not supported", e);
-            this.enabled = false;
-          }
-        },
-        
-        play(type) {
-          if (!this.enabled || !this.audioContext) return;
-          
-          const sound = this.sounds[type] || this.sounds.button;
-          const osc = this.audioContext.createOscillator();
-          const gain = this.audioContext.createGain();
-          
-          osc.type = sound.type;
-          
-          if (Array.isArray(sound.freq)) {
-            // Play sequence of frequencies
-            sound.freq.forEach((freq, i) => {
-              osc.frequency.setValueAtTime(
-                freq, 
-                this.audioContext.currentTime + (i * sound.duration)
-              );
-            });
-          } else {
-            osc.frequency.value = sound.freq;
-          }
-          
-          gain.gain.setValueAtTime(0.1, this.audioContext.currentTime);
-          gain.gain.exponentialRampToValueAtTime(
-            0.001, 
-            this.audioContext.currentTime + (Array.isArray(sound.freq) ? 
-              sound.freq.length * sound.duration : sound.duration)
-          );
-          
-          osc.connect(gain);
-          gain.connect(this.audioContext.destination);
-          osc.start();
-          osc.stop(this.audioContext.currentTime + (
-            Array.isArray(sound.freq) ? 
-            sound.freq.length * sound.duration * 1.1 : 
-            sound.duration * 1.5
-          ));
-        },
-        
-        toggle(enable) {
-          this.enabled = enable;
-          localStorage.setItem("soundEnabled", enable);
-          updateSoundButton();
-          if (enable && !this.audioContext) this.init();
-        }
-      };
+// SOUND CONTROLLER WITH VOLUME
+// ======================
+const Sound = {
+  enabled: true,
+  audioContext: null,
+  masterVolume: 1.0, // 1.0 = 100%
+  sounds: {
+    increment: { freq: 800, duration: 0.05, type: "sine" },
+    button: { freq: 600, duration: 0.03, type: "square" },
+    undo: { freq: [300, 500, 300], duration: 0.08, type: "sine" },
+    error: { freq: 200, duration: 0.3, type: "sawtooth" },
+    success: { freq: 1000, duration: 0.1, type: "sine" },
+    tabSwitch: { freq: 400, duration: 0.05, type: "sine" },
+    export: { freq: [500, 700, 500], duration: 0.1, type: "square" },
+    editStart: { freq: [600, 400], duration: 0.05, type: "sine" },
+    test: { freq: [400, 600, 400], duration: 0.1, type: "sine" }
+  },
+  
+  init() {
+    try {
+      this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      this.masterVolume = parseFloat(localStorage.getItem("soundVolume") || "1.0");
+    } catch (e) {
+      console.warn("Web Audio API not supported", e);
+      this.enabled = false;
+    }
+  },
+  
+  play(type) {
+    if (!this.enabled || !this.audioContext) return;
+    
+    const sound = this.sounds[type] || this.sounds.button;
+    const osc = this.audioContext.createOscillator();
+    const gain = this.audioContext.createGain();
+    
+    osc.type = sound.type;
+    
+    if (Array.isArray(sound.freq)) {
+      sound.freq.forEach((freq, i) => {
+        osc.frequency.setValueAtTime(
+          freq, 
+          this.audioContext.currentTime + (i * sound.duration)
+        );
+      });
+    } else {
+      osc.frequency.value = sound.freq;
+    }
+    
+    // Apply master volume (0.1 * masterVolume for base volume)
+    const baseVolume = 0.1 * this.masterVolume;
+    const minVolume = 0.001;
+    
+    gain.gain.setValueAtTime(baseVolume, this.audioContext.currentTime);
+    gain.gain.exponentialRampToValueAtTime(
+      minVolume, 
+      this.audioContext.currentTime + (Array.isArray(sound.freq) ? 
+        sound.freq.length * sound.duration : sound.duration)
+    );
+    
+    osc.connect(gain);
+    gain.connect(this.audioContext.destination);
+    osc.start();
+    osc.stop(this.audioContext.currentTime + (
+      Array.isArray(sound.freq) ? 
+      sound.freq.length * sound.duration * 1.1 : 
+      sound.duration * 1.5
+    ));
+  },
+  
+  setVolume(volume) {
+    // Volume can be from 0.1 (10%) to 2.0 (200%)
+    this.masterVolume = Math.max(0.1, Math.min(2.0, volume));
+    localStorage.setItem("soundVolume", this.masterVolume);
+    updateVolumeDisplay();
+  },
+  
+  getVolumePercentage() {
+    return Math.round(this.masterVolume * 100);
+  },
+  
+  toggle(enable) {
+    this.enabled = enable;
+    localStorage.setItem("soundEnabled", enable);
+    updateSoundButton();
+    if (enable && !this.audioContext) this.init();
+  }
+};
 
-      function updateSoundButton() {
-        const btn = document.getElementById("soundToggle");
-        if (Sound.enabled) {
-          btn.innerHTML = "🔊 Sounds ON";
-          btn.style.color = "var(--sound-color)";
-        } else {
-          btn.innerHTML = "🔇 Sounds OFF";
-          btn.style.color = "var(--error)";
-        }
-      }
+function updateSoundButton() {
+  const btn = document.getElementById("soundToggle");
+  if (Sound.enabled) {
+    btn.innerHTML = `🔊 Volume: ${Sound.getVolumePercentage()}%`;
+    btn.style.color = "var(--sound-color)";
+  } else {
+    btn.innerHTML = "🔇 Sounds OFF";
+    btn.style.color = "var(--error)";
+  }
+}
+
+function updateVolumeDisplay() {
+  const volumeValue = document.getElementById("volumeValue");
+  const volumeSlider = document.getElementById("volumeSlider");
+  
+  if (volumeValue) {
+    volumeValue.textContent = `${Sound.getVolumePercentage()}%`;
+  }
+  
+  if (volumeSlider) {
+    volumeSlider.value = Sound.getVolumePercentage();
+  }
+  
+  updateSoundButton();
+}
 
       // ======================
       // VIBRATION CONTROLLER
@@ -1393,34 +1731,41 @@ function calculateEidDates() {
       // FEEDBACK WRAPPER
       // ======================
       const Feedback = {
-        trigger(type) {
-          Vibration.trigger(type);
-          Sound.play(type);
-        },
-        
-        init() {
-          // Load preferences
-          Vibration.toggle(localStorage.getItem("vibrationEnabled") !== "false");
-          Sound.toggle(localStorage.getItem("soundEnabled") !== "false");
-          
-          // Add event listeners for toggles
-          document.getElementById("vibrationToggle").addEventListener("click", () => {
-            Vibration.toggle(!Vibration.enabled);
-          });
-          
-          document.getElementById("soundToggle").addEventListener("click", () => {
-            Sound.toggle(!Sound.enabled);
-          });
-          
-          // Add feedback to all buttons
-          document.querySelectorAll('button').forEach(btn => {
-            if (!btn.id.includes("Toggle")) {
-              btn.addEventListener('click', () => Feedback.trigger("button"));
-            }
-          });
-        }
-      };
-
+  trigger(type) {
+    Vibration.trigger(type);
+    Sound.play(type);
+  },
+  
+  init() {
+    // Load preferences
+    Vibration.toggle(localStorage.getItem("vibrationEnabled") !== "false");
+    Sound.toggle(localStorage.getItem("soundEnabled") !== "false");
+    
+    // Load saved volume
+    const savedVolume = localStorage.getItem("soundVolume");
+    if (savedVolume) {
+      Sound.setVolume(parseFloat(savedVolume));
+    }
+    
+    // Add event listeners for toggles
+    document.getElementById("vibrationToggle").addEventListener("click", () => {
+      Vibration.toggle(!Vibration.enabled);
+    });
+    
+    // Note: The sound toggle handler is now set up separately below
+    // We removed the original sound toggle listener from here
+    
+    // Add feedback to all buttons
+    document.querySelectorAll('button').forEach(btn => {
+      if (!btn.id.includes("Toggle") && btn.id !== "testVolumeBtn") {
+        btn.addEventListener('click', () => Feedback.trigger("button"));
+      }
+    });
+    
+    // Initialize volume display
+    updateSoundButton();
+  }
+};
       // DOM Elements
       const lockScreen = document.getElementById("lockScreen");
    
@@ -1438,18 +1783,30 @@ function calculateEidDates() {
       const exportCSVBtn = document.getElementById("exportCSVBtn");
       const exportJSONBtn = document.getElementById("exportJSONBtn");
       const importJSONBtn = document.getElementById("importJSONBtn");
-      const searchInput = document.getElementById("searchInput");
       const themeToggle = document.getElementById("themeToggle");
       const undoHistoryButton = document.getElementById("undoHistoryButton");
       const vibrationToggle = document.getElementById("vibrationToggle");
       const soundToggle = document.getElementById("soundToggle");
       const editOverlay = document.querySelector('.edit-overlay');
 
-      // Initialize
-      createTab(1, true, "General");
-      loadGridData();
-      checkDarkMode();
-      Feedback.init();
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	// Initialize
+	initializeModeToggle();  // Add this FIRST
+	createTab(1, true, "General");
+	loadGridData();
+	checkDarkMode();
+	Feedback.init();
 
       // Initialize Sound (will only activate after user interaction)
       document.addEventListener('click', () => {
@@ -1466,7 +1823,6 @@ function calculateEidDates() {
       exportCSVBtn.addEventListener("click", exportToCSV);
       exportJSONBtn.addEventListener("click", exportToJSON);
       importJSONBtn.addEventListener("click", importFromJSON);
-      searchInput.addEventListener("input", filterAgeGroups);
       themeToggle.addEventListener("click", toggleDarkMode);
       undoHistoryButton.addEventListener("click", showHistoryPopup);
 	  document.getElementById("sumGridsButton").addEventListener("click", sumMarkedGrids);
@@ -1530,7 +1886,7 @@ function createTab(gridIndex, isActive = false, name = `Grid ${gridIndex}`) {
   const tbody = document.createElement("tbody");
   table.appendChild(tbody);
 
-  AGE_GROUPS.forEach(ageGroup => {
+  getCurrentAgeGroups().forEach(ageGroup => {
     createAgeGroupRow(tbody, ageGroup);
   });
 
@@ -1602,7 +1958,7 @@ function editTabName(tab) {
 	  
 	  
 
-      function createAgeGroupRow(tbody, ageGroup) {
+            function createAgeGroupRow(tbody, ageGroup) {
         const row = document.createElement("tr");
         tbody.appendChild(row);
         
@@ -1966,37 +2322,42 @@ function finishEdit() {
         }
       }
 
-      function resetAllGrids(silent = false) {
-        if (!silent && !confirm("Are you sure you want to reset ALL grids? This cannot be undone.")) {
-          return;
-        }
-        
-        document.querySelectorAll(".data-table td[data-type]").forEach(cell => {
-          cell.textContent = "0";
-        });
-        
-        // Reset grid names and tabs (except first one)
-        gridNames = ["General"];
-        document.querySelector(`.tab[data-grid="grid1"]`).textContent = "General";
-        
-        // Remove additional grids
-        const tabs = document.querySelectorAll(".tab:not([data-grid='grid1'])");
-        const grids = document.querySelectorAll(".table-container:not(#grid1)");
-        
-        tabs.forEach(tab => tab.remove());
-        grids.forEach(grid => grid.remove());
-        
-        gridCount = 1;
-        undoStack = [];
-        updateTotalCells();
-        autoSaveGridData();
-        
-        if (!silent) {
-          showToast("All grids reset!");
-        }
-      }
+function resetAllGrids(silent = false) {
+  if (!silent && !confirm(`Are you sure you want to reset ALL grids in ${currentMode} mode? This cannot be undone.`)) {
+    return;
+  }
+  
+  // Clear current mode data
+  if (modeData[currentMode]) {
+    modeData[currentMode] = {
+      gridNames: currentMode === "weekly" ? ["Weekly General"] : ["General"],
+      gridCount: 1,
+      gridData: {}
+    };
+  }
+  
+  // Update UI
+  document.querySelectorAll(".table-container").forEach(container => container.remove());
+  document.querySelectorAll(".tab").forEach(tab => tab.remove());
+  tabContainer.innerHTML = "";
+  gridContainer.innerHTML = "";
+  
+  // Reset for current mode
+  gridCount = 1;
+  gridNames = currentMode === "weekly" ? ["Weekly General"] : ["General"];
+  createTab(1, true, gridNames[0]);
+  
+  undoStack = [];
+  updateTotalCells();
+  saveCurrentModeData(); // Save the reset state
+  
+  if (!silent) {
+    showToast(`${currentMode === "weekly" ? "Weekly" : "Monthly"} grids reset!`);
+  }
+}
 
 function exportToExcel() {
+const mode = currentMode === "weekly" ? "Weekly" : "Monthly";
   Feedback.trigger("export");
   const data = [];
   document.querySelectorAll(".data-table").forEach(table => {
@@ -2006,6 +2367,9 @@ function exportToExcel() {
     gridData.push([gridName]);
     gridData.push(["Age Group", "Male", "Female"]);
 
+
+    // Get correct age groups for current mode
+    const currentAgeGroups = getCurrentAgeGroups();
     const rows = table.querySelectorAll('tbody tr:not(.total-row)');
     rows.forEach(row => {
       const ageGroup = row.querySelector('.age-group-cell').textContent;
@@ -2035,7 +2399,9 @@ function exportToExcel() {
     XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
   });
 
-  const fileName = fileTitleInput.value || "Population Data";
+const fileName = fileTitleInput.value || "Population Data";
+  
+  
   XLSX.writeFile(workbook, `${fileName}.xlsx`);
   showToast("Exported to Excel!");
 }
@@ -2046,6 +2412,9 @@ function exportToExcel() {
         document.querySelectorAll('.data-table').forEach(table => {
           const gridName = document.querySelector(`.tab[data-grid="${table.closest('.table-container').id}"]`).textContent;
           csvContent += `\n${gridName}\n`;
+		  
+		            // Get correct age groups for current mode
+          const currentAgeGroups = getCurrentAgeGroups();
           const rows = table.querySelectorAll('tbody tr:not(.total-row)');
           rows.forEach(row => {
             const ageGroup = row.querySelector('.age-group-cell').textContent;
@@ -2059,7 +2428,8 @@ function exportToExcel() {
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `${fileTitleInput.value || "data"}.csv`;
+                const mode = currentMode === "weekly" ? "Weekly" : "Monthly";
+        a.download = `${fileTitleInput.value || "data"} - ${mode}.csv`;
         a.click();
         showToast("Exported to CSV!");
       }
@@ -2067,11 +2437,13 @@ function exportToExcel() {
       function exportToJSON() {
         Feedback.trigger("export");
         
-        const exportData = {
+                const exportData = {
           version: "1.0",
           exportedAt: new Date().toISOString(),
           fileName: fileTitleInput.value || "Untitled Tallysheet",
+          mode: currentMode, // Add this line
           grids: [],
+		  
           settings: {
             darkMode: document.body.classList.contains("dark-mode"),
             soundEnabled: Sound.enabled,
@@ -2165,6 +2537,18 @@ function importFromJSON() {
           }
         });
         
+		
+		
+		
+		
+		        // Set mode if imported from different mode
+        if (data.mode && data.mode !== currentMode) {
+          if (confirm(`This data was saved in ${data.mode === "weekly" ? "Weekly" : "Monthly"} mode. Switch to ${data.mode === "weekly" ? "Weekly" : "Monthly"} mode to view it correctly?`)) {
+            setMode(data.mode);
+          }
+        }
+		
+		
         // Restore settings
         if (data.settings) {
           if (data.settings.darkMode !== undefined) {
@@ -2257,14 +2641,7 @@ function resetAllGrids(silent = false) {
   }
 }
 
-      function filterAgeGroups() {
-        const searchTerm = searchInput.value.toLowerCase();
-        document.querySelectorAll(".age-group-cell").forEach(ageGroupCell => {
-          const rowText = ageGroupCell.textContent.toLowerCase();
-          const row = ageGroupCell.parentElement;
-          row.style.display = rowText.includes(searchTerm) ? "table-row" : "none";
-        });
-      }
+
 
       function toggleDarkMode() {
         document.body.classList.toggle("dark-mode");
@@ -2477,6 +2854,75 @@ function createSumGrid(selectedGrids) {
 
 
 
+
+
+
+function createAggregatedAgeGroupGrid() {
+  // Get selected grids
+  const selectedGrids = Array.from(
+    document.querySelectorAll("#ageAggregationGridList input[type='checkbox']:checked")
+  ).map(checkbox => checkbox.value);
+  
+  if (selectedGrids.length === 0) {
+    showToast("Please select at least one grid to aggregate", true);
+    return;
+  }
+  
+  // Create aggregated grid name
+  const aggregatedName = "Aggregated " + (currentMode === "weekly" ? "Weekly" : "Monthly");
+  gridCount += 1;
+  gridNames.push(aggregatedName);
+  createTab(gridCount, true, aggregatedName);
+  
+  // Get the aggregated grid container
+  const aggregatedContainer = document.getElementById(`grid${gridCount}`);
+  
+  // Calculate and populate the aggregated data
+  calculateAndPopulateAggregatedGrid(selectedGrids, aggregatedContainer);
+  
+  showToast(`Created aggregated grid from ${selectedGrids.length} grid(s)`);
+}
+
+function calculateAndPopulateAggregatedGrid(selectedGridIds, targetContainer) {
+  // Define age groups based on current mode
+  const ageGroups = currentMode === "weekly" ? WEEKLY_AGE_GROUPS : MONTHLY_AGE_GROUPS;
+  
+  // Initialize sums
+  const sums = {};
+  ageGroups.forEach(group => {
+    sums[group.range] = { male: 0, female: 0 };
+  });
+  
+  // Sum data from selected grids
+  selectedGridIds.forEach(gridId => {
+    const container = document.getElementById(gridId);
+    if (!container) return;
+    
+    container.querySelectorAll("td[data-type]").forEach(cell => {
+      const ageGroup = cell.dataset.ageGroup;
+      const type = cell.dataset.type;
+      const value = parseInt(cell.textContent) || 0;
+      
+      if (sums[ageGroup]) {
+        sums[ageGroup][type] += value;
+      }
+    });
+  });
+  
+  // Populate the aggregated grid
+  ageGroups.forEach(group => {
+    const maleCell = targetContainer.querySelector(`td[data-ageGroup="${group.range}"][data-type="male"]`);
+    const femaleCell = targetContainer.querySelector(`td[data-ageGroup="${group.range}"][data-type="female"]`);
+    
+    if (maleCell) maleCell.textContent = sums[group.range].male;
+    if (femaleCell) femaleCell.textContent = sums[group.range].female;
+  });
+  
+  // Update totals
+  updateTotalCells();
+}
+
+
 	  
 	  
 	function showAgeAggregationPopup() {
@@ -2534,16 +2980,29 @@ function createSumGrid(selectedGrids) {
   };
 }
 
+
+
+
+
 function calculateAgeAggregation() {
   // Get selected grids
   const selectedGrids = Array.from(
     document.querySelectorAll("#ageAggregationGridList input[type='checkbox']:checked")
   ).map(checkbox => checkbox.value);
   
-  // Define age groups
-  const minorGroups = ["<1", "1-4", "5-9", "10-14"];
-  const adultGroups = ["15-19", "20-24", "25-29", "30-34", "35-39", 
-                      "40-44", "45-49", "50-54", "55-59", "60-64", "65+"];
+  // Define age groups based on current mode
+  let minorGroups, adultGroups;
+  
+  if (currentMode === "weekly") {
+    // For weekly mode: <1, 1-4, 5-9, 10-14 are minors, 15+ is adults
+    minorGroups = ["<1", "1-4", "5-9", "10-14"];
+    adultGroups = ["15+"];
+  } else {
+    // For monthly mode: original groups
+    minorGroups = ["<1", "1-4", "5-9", "10-14"];
+    adultGroups = ["15-19", "20-24", "25-29", "30-34", "35-39", 
+                  "40-44", "45-49", "50-54", "55-59", "60-64", "65+"];
+  }
   
   // Initialize results
   const minorResults = {};
@@ -2579,9 +3038,8 @@ function calculateAgeAggregation() {
   });
   
   // Update the display
-  updateAggregationDisplay(minorResults, adultResults, totals);
+  updateAggregationDisplay(minorResults, adultResults, totals, minorGroups, adultGroups);
 }
-
 
 
 
@@ -2720,5 +3178,4 @@ function updateAggregationDisplay(minorResults, adultResults, totals) {
 
 
 Yours truly: 🤖Mu54N6U_Ch3Lu...
-
 
