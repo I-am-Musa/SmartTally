@@ -2079,12 +2079,12 @@ function editTabName(tab) {
           const previousValue = parseInt(value) || 0;
           
           if (newValue !== previousValue) {
-            undoStack.push({
-              cell,
-              previousValue,
-              action: `Edited ${cell.dataset.ageGroup} ${cell.dataset.type} from ${previousValue} to ${newValue}`,
-              gridId: cell.closest('.table-container').id
-            });
+undoStack.push({
+  cell,
+  previousValue,
+  action: `[${getGridName(cell)}] ${cell.dataset.ageGroup} ${cell.dataset.type}: ${previousValue} → ${newValue}`,
+  gridId: cell.closest('.table-container').id  // ADD THIS LINE
+});
             
             if (undoStack.length > UNDO_LIMIT) undoStack.shift();
             cell.textContent = newValue;
@@ -2138,11 +2138,16 @@ function incrementCell(cell) {
   const newValue = previousValue + 1;
   
   undoStack.push({
-    cell,
-    previousValue,
-    action: `${cell.dataset.ageGroup} ${cell.dataset.type}: ${previousValue} → ${newValue}`,
-    gridId: cell.closest('.table-container').id
-  });
+  cell,
+  previousValue,
+  action: `[${getGridName(cell)}] ${cell.dataset.ageGroup} ${cell.dataset.type}: ${previousValue} → ${newValue}`,
+  gridId: cell.closest('.table-container').id  // ADD THIS LINE
+});
+  
+  
+  
+  
+  
 
   if (undoStack.length > UNDO_LIMIT) undoStack.shift();
   cell.textContent = newValue;
@@ -2165,11 +2170,11 @@ function finishEdit() {
   
   if (newValue !== previousValue) {
     undoStack.push({
-      cell,
-      previousValue,
-      action: `Edited ${cell.dataset.ageGroup} ${cell.dataset.type} from ${previousValue} to ${newValue}`,
-      gridId: cell.closest('.table-container').id
-    });
+  cell,
+  previousValue,
+  action: `[${getGridName(cell)}] Edited ${cell.dataset.ageGroup} ${cell.dataset.type} from ${previousValue} to ${newValue}`,
+  gridId: cell.closest('.table-container').id  // THIS LINE IS ALREADY THERE - GOOD!
+});
     
     if (undoStack.length > UNDO_LIMIT) undoStack.shift();
     cell.textContent = newValue;
@@ -3122,6 +3127,45 @@ function updateAggregationDisplay(minorResults, adultResults, totals) {
 
 
 
+function getGridName(cell) {
+  const container = cell.closest('.table-container');
+  if (!container) return "Unknown Grid";
+  
+  const gridId = container.id;
+  const tab = document.querySelector(`.tab[data-grid="${gridId}"]`);
+  
+  if (tab) {
+    // Get just the name without the edit icon
+    const nameSpan = tab.querySelector('.tab-name');
+    return nameSpan ? nameSpan.textContent : tab.textContent.replace(' ✏️', '');
+  }
+  
+  return "Unknown Grid";
+}
+
+
+
+
+
+function getGridName(cell) {
+  // Find which grid this cell belongs to
+  const gridContainer = cell.closest('.table-container');
+  if (!gridContainer) return "Unknown";
+  
+  const gridId = gridContainer.id; // like "grid1" or "grid2"
+  
+  // Find the tab with matching ID
+  const tab = document.querySelector(`.tab[data-grid="${gridId}"]`);
+  if (!tab) return "Grid";
+  
+  // Get the name without edit icon
+  const nameElement = tab.querySelector('.tab-name');
+  if (nameElement) {
+    return nameElement.textContent;
+  }
+  
+  return tab.textContent.replace('✏️', '').trim();
+}
 
 
 
@@ -3130,44 +3174,6 @@ function updateAggregationDisplay(minorResults, adultResults, totals) {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-     
-
-
-
-
-
-
-
-
-	  
-	
-	  
-	  
 	  
 	  
 	  
