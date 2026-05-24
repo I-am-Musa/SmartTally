@@ -6,6 +6,11 @@
   <meta name="theme-color" content="#4a6fa5">
   <meta name="description" content="LazyMan's Tallysheet — fast clinical tally counter with HIV EID and drug refill calculators.">
   <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Tallysheet">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <title>LazyMan's Tallysheet</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
@@ -119,6 +124,15 @@
       border-radius: 4px;
     }
     .grid-period-bar label { font-weight: bold; font-size: 14px; }
+    .grid-period-range {
+      font-size: 14px;
+      color: var(--primary);
+      font-weight: 600;
+      padding: 4px 10px;
+      background-color: rgba(74, 111, 165, 0.12);
+      border-radius: 4px;
+    }
+    .dark-mode .grid-period-range { color: var(--accent); }
 
     .data-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
     .data-table th, .data-table td {
@@ -356,23 +370,6 @@
       .data-table th, .data-table td { padding: 10px 6px; }
     }
 
-    /* Print styles */
-    @media print {
-      body { background: white; color: black; padding: 0; }
-      .controls, .mode-toggle-container, .header-bar input,
-      .edit-tab-btn, .toggle-sidebar, .popup, .edit-overlay,
-      #recentEntriesSidebar { display: none !important; }
-      .tab.active { background: #eee !important; color: black !important; }
-      .table-container { page-break-inside: avoid; }
-      .data-table th, .data-table td {
-        border: 1px solid #333 !important;
-        background: white !important;
-        color: black !important;
-      }
-      .total-row { background: #f0f0f0 !important; }
-      h1 { font-size: 18pt; }
-    }
-
     /* Toast */
     .toast {
       position: fixed;
@@ -529,7 +526,6 @@
       <button id="exportCSVBtn">📝 Export CSV</button>
       <button id="exportJSONBtn">📤 Export JSON</button>
       <button id="importJSONBtn">📥 Import JSON</button>
-      <button id="printBtn">🖨️ Print</button>
       <button id="sumGridsButton">🧮 Aggregate Grids</button>
       <button id="aggregateAgeButton">👶 Aggregate by Peads/Adults</button>
       <button id="eidCalculatorBtn">🩺 EID Calculator</button>
@@ -851,7 +847,18 @@
         // Restore period
         if (data.gridPeriods && data.gridPeriods[gridId]) {
           const periodInput = document.querySelector(`#${gridId} .grid-period-input`);
-          if (periodInput) periodInput.value = data.gridPeriods[gridId];
+          if (periodInput) {
+            let stored = data.gridPeriods[gridId];
+            // Migrate any legacy ISO week ("YYYY-Www") values to a Friday date.
+            if (currentMode === "weekly" && /^\d{4}-W\d{2}$/.test(stored)) {
+              stored = snapToReportingWeekStart(new Date()) || "";
+            }
+            periodInput.value = stored;
+            if (currentMode === "weekly") {
+              const range = document.querySelector(`#${gridId} .grid-period-range`);
+              if (range) range.textContent = formatReportingWeekRange(periodInput.value);
+            }
+          }
         }
       });
       updateTotalCells();
@@ -906,15 +913,41 @@
       const periodLabel = document.createElement("label");
       const periodInputId = `period-${gridIndex}`;
       periodLabel.htmlFor = periodInputId;
-      periodLabel.textContent = currentMode === "weekly" ? "Week:" : "Month:";
+      periodLabel.textContent = currentMode === "weekly" ? "Week starting (Fri):" : "Month:";
       const periodInput = document.createElement("input");
       periodInput.id = periodInputId;
       periodInput.className = "grid-period-input";
-      periodInput.type = currentMode === "weekly" ? "week" : "month";
+      periodInput.type = currentMode === "weekly" ? "date" : "month";
       periodInput.value = defaultPeriodValue();
-      periodInput.addEventListener("change", saveAll);
+
+      // Range display (weekly only)
+      let rangeDisplay = null;
+      if (currentMode === "weekly") {
+        rangeDisplay = document.createElement("span");
+        rangeDisplay.className = "grid-period-range";
+        rangeDisplay.setAttribute("aria-live", "polite");
+        rangeDisplay.textContent = formatReportingWeekRange(periodInput.value);
+      }
+
+      periodInput.addEventListener("change", () => {
+        if (currentMode === "weekly") {
+          const snapped = snapToReportingWeekStart(periodInput.value);
+          if (snapped) {
+            if (snapped !== periodInput.value) {
+              periodInput.value = snapped;
+              showToast(`Snapped to reporting week start (Friday)`);
+            }
+            if (rangeDisplay) rangeDisplay.textContent = formatReportingWeekRange(snapped);
+          } else if (rangeDisplay) {
+            rangeDisplay.textContent = "";
+          }
+        }
+        saveAll();
+      });
+
       periodBar.appendChild(periodLabel);
       periodBar.appendChild(periodInput);
+      if (rangeDisplay) periodBar.appendChild(rangeDisplay);
       tableContainer.appendChild(periodBar);
 
       // Table
@@ -953,19 +986,41 @@
       gridContainer().appendChild(tableContainer);
     }
 
+    // Reporting week runs Friday → Thursday.
+    // Snap any date (Date or YYYY-MM-DD string) to the Friday that begins its reporting week.
+    function snapToReportingWeekStart(dateOrString) {
+      const d = (dateOrString instanceof Date)
+        ? new Date(dateOrString)
+        : new Date(String(dateOrString) + 'T00:00:00');
+      if (isNaN(d.getTime())) return null;
+      const day = d.getDay(); // Sun=0, Mon=1, ..., Fri=5, Sat=6
+      const daysSinceFriday = (day - 5 + 7) % 7;
+      d.setDate(d.getDate() - daysSinceFriday);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+
+    function formatReportingWeekRange(fridayDateString) {
+      if (!fridayDateString) return '';
+      const start = new Date(fridayDateString + 'T00:00:00');
+      if (isNaN(start.getTime())) return '';
+      const end = new Date(start);
+      end.setDate(end.getDate() + 6);
+      const opts = { weekday: 'short', day: 'numeric', month: 'short' };
+      const sameYear = start.getFullYear() === end.getFullYear();
+      const startStr = start.toLocaleDateString('en-GB', opts);
+      const endStr = end.toLocaleDateString('en-GB', opts);
+      return sameYear
+        ? `${startStr} – ${endStr} ${end.getFullYear()}`
+        : `${startStr} ${start.getFullYear()} – ${endStr} ${end.getFullYear()}`;
+    }
+
     function defaultPeriodValue() {
       const now = new Date();
       if (currentMode === "weekly") {
-        // ISO week
-        const tmp = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
-        const dayNum = tmp.getUTCDay() || 7;
-        tmp.setUTCDate(tmp.getUTCDate() + 4 - dayNum);
-        const yearStart = new Date(Date.UTC(tmp.getUTCFullYear(), 0, 1));
-        const weekNum = Math.ceil((((tmp - yearStart) / 86400000) + 1) / 7);
-        return `${tmp.getUTCFullYear()}-W${String(weekNum).padStart(2, '0')}`;
-      } else {
-        return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        // Friday-starting reporting week — return YYYY-MM-DD of that Friday
+        return snapToReportingWeekStart(now);
       }
+      return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     }
 
     function editTabName(tab) {
@@ -1383,7 +1438,11 @@
     // ============================================================
     function getPeriodForGrid(gridId) {
       const periodInput = document.querySelector(`#${gridId} .grid-period-input`);
-      return periodInput ? periodInput.value : "";
+      if (!periodInput || !periodInput.value) return "";
+      if (currentMode === "weekly") {
+        return `${periodInput.value} (${formatReportingWeekRange(periodInput.value)})`;
+      }
+      return periodInput.value;
     }
 
     function exportToExcel() {
@@ -1935,7 +1994,6 @@
       document.getElementById("exportCSVBtn").addEventListener("click", exportToCSV);
       document.getElementById("exportJSONBtn").addEventListener("click", exportToJSON);
       document.getElementById("importJSONBtn").addEventListener("click", importFromJSON);
-      document.getElementById("printBtn").addEventListener("click", () => window.print());
       document.getElementById("undoHistoryButton").addEventListener("click", () => { Feedback.trigger("button"); showHistoryPopup(); });
       document.getElementById("closePopup").addEventListener("click", () => document.getElementById("historyPopup").style.display = "none");
       document.getElementById("sumGridsButton").addEventListener("click", sumMarkedGrids);
@@ -2011,10 +2069,6 @@
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
           e.preventDefault();
           undoLast();
-        }
-        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'p') {
-          e.preventDefault();
-          window.print();
         }
       });
 
